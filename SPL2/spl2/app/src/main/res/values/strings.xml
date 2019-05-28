@@ -9,9 +9,9 @@
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
-    <string name="calc_save_btn">Save Graph</string>
+    <string name="calc_save_btn">Save Graphs</string>
     <string name="calc_refresh_btn">Refresh Graphs</string>
-    <string name="calc_logout_btn">Log Out</string>
+    <string name="calc_delete_btn">Delete Graph</string>
 
     <string-array name="types">
         <item>Please select a type</item>

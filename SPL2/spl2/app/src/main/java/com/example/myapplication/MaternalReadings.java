@@ -30,12 +30,13 @@ import java.util.Locale;
 
 import static android.app.Activity.RESULT_OK;
 
-public class FetalHeartRate extends Fragment {
+
+public class MaternalReadings extends Fragment {
+
 
     Button btn,btn2;
     EditText xInput, yInput;
     LineDataSet lineDataSet = new LineDataSet(null,null);
-    LineDataSet lineDataSet1,lineDataSet2;
     ArrayList<ILineDataSet> dataSets = new ArrayList<>();
     ArrayList<Entry> temp = new ArrayList<>();
     MyHelper myHelper;
@@ -44,13 +45,13 @@ public class FetalHeartRate extends Fragment {
     boolean pointsAdded;
     LineData lineData;
     ImageView imageView;
-    ArrayList<Entry> savedEntries = new ArrayList<>();
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View view =  inflater.inflate(R.layout.fetal_heart_rate, container, false);
+        View view =  inflater.inflate(R.layout.fragment_maternal_readings, container, false);
+
         btn = (Button) view.findViewById(R.id.button);
         btn2 = (Button) view.findViewById(R.id.button2);
         xInput = (EditText) view.findViewById(R.id.editText);
@@ -64,23 +65,7 @@ public class FetalHeartRate extends Fragment {
         myHelper = new MyHelper(getContext());
         sqLiteDatabase = myHelper.getWritableDatabase();
 
-        myHelper.deleteAll();
-
-        lineDataSet1 = new LineDataSet(null,null);
-        lineDataSet2 = new LineDataSet(null,null);
-
         dataSets.clear();
-        lineDataSet1.addEntry(new Entry(0,100));
-        lineDataSet1.addEntry(new Entry(24,100));
-        lineDataSet1.setColor(Color.GRAY);
-        lineDataSet1.setLineWidth(5);
-        lineDataSet1.setLabel("Alert");
-
-        lineDataSet2.addEntry(new Entry(0,180));
-        lineDataSet2.addEntry(new Entry(24,180));
-        lineDataSet2.setColor(Color.GRAY);
-        lineDataSet2.setLineWidth(5);
-        lineDataSet2.setLabel("Action");
 
         pointsAdded = false;
 
@@ -89,16 +74,14 @@ public class FetalHeartRate extends Fragment {
 //        lineDataSet.setLabel("Readings");
 
         lineData = new LineData();
-        lineData.addDataSet(lineDataSet1);
-        lineData.addDataSet(lineDataSet2);
 
         XAxis xAxis = graph.getXAxis();
         YAxis yAxis = graph.getAxisLeft();
 
-        yAxis.setLabelCount(13,true);
+        yAxis.setLabelCount(11,true);
         xAxis.setLabelCount(25,true);
         xAxis.setAxisMaximum(24);
-        yAxis.setAxisMaximum(200);
+        yAxis.setAxisMaximum(180);
         xAxis.setAxisMinimum(0);
         yAxis.setAxisMinimum(80);
         yAxis.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
@@ -138,23 +121,24 @@ public class FetalHeartRate extends Fragment {
 
                 value = valueChecking(value);
 
-                yInput.setText(value);
-
                 int yVal = Integer.parseInt(value);
 
                 myHelper.insertData(xVal, yVal);
 
                 lineDataSet.clear();
-                myHelper.deleteAll();
-                savedEntries = getData();
                 lineDataSet.setValues(getData());
                 lineDataSet.setLabel("Readings");
                 lineDataSet.setDrawCircles(true);
                 lineDataSet.setDrawCircleHole(true);
                 lineDataSet.setCircleColor(Color.CYAN);
-                lineDataSet.setCircleRadius(6);
-                lineDataSet.setCircleHoleRadius(3);
+                lineDataSet.setCircleRadius(10);
+                lineDataSet.setCircleHoleRadius(5);
 
+//                lineDataSet.addEntry(new Entry(xVal,yVal));
+
+//                lineData.clearValues();
+//                lineData.addDataSet(lineDataSet1);
+//                lineData.addDataSet(lineDataSet2);
                 lineData.addDataSet(lineDataSet);
                 graph.clear();
                 graph.setData(lineData);
@@ -219,8 +203,4 @@ public class FetalHeartRate extends Fragment {
         return dp;
     }
 
-    public ArrayList<Entry> saveData(){
-
-        return this.savedEntries;
-    }
 }

@@ -1,5 +1,6 @@
 package com.example.myapplication;
 
+import android.content.Intent;
 import android.os.PersistableBundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -14,6 +15,19 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
+
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 public class PartocalcActivity extends AppCompatActivity{
@@ -22,11 +36,17 @@ public class PartocalcActivity extends AppCompatActivity{
 
     private ViewPager mViewPager;
     private Toolbar toolbar;
+    private  String graphId;
+
+    private FirebaseFirestore firebaseFirestore;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.partocalc_activity);
+
+        graphId = getIntent().getStringExtra("graphId");
+        firebaseFirestore = FirebaseFirestore.getInstance();
 
         toolbar = (Toolbar) findViewById(R.id.partoToolbar);
         setSupportActionBar(toolbar);
@@ -62,8 +82,11 @@ public class PartocalcActivity extends AppCompatActivity{
         SectionsPageAdapter adapter = new SectionsPageAdapter(getSupportFragmentManager());
         adapter.addFragment(new CervicalActivity(), "Cervical Dialatation");
         adapter.addFragment(new BarActivity(), "Contractions");
+        adapter.addFragment(new FetalHeartRate(),"Fetal Heart Rate");
 
         viewPager.setAdapter(adapter);
+        viewPager.setOffscreenPageLimit(2);
+
     }
 
     @Override
@@ -76,11 +99,59 @@ public class PartocalcActivity extends AppCompatActivity{
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
-        if (id == android.R.id.home) {
+        if(id == android.R.id.home){
             onBackPressed();
+            finish();
             return true;
+        }
+        if (id == R.id.save_graphs) {
+            saveGraphs();
+            return true;
+        }
+        else if (id == R.id.refresh_grpahs){
+
+        }
+        else if( id == R.id.delete_graphs){
+
         }
 
         return true;
     }
+
+    private void saveGraphs() {
+        List<Fragment> fragments = getSupportFragmentManager().getFragments();
+        Map<String , Object> graphMap = new HashMap<>();
+        for(Fragment f: fragments){
+            if(f instanceof CervicalActivity){
+                graphMap.put("cervicalData",((CervicalActivity) f).saveData());
+            }
+            else if(f instanceof BarActivity){
+                graphMap.put("contractions",((BarActivity) f).saveData());
+            }
+            else if(f instanceof FetalHeartRate){
+                graphMap.put("fetalRate",((FetalHeartRate) f).saveData());
+            }
+        }
+        storeFirestore(graphMap);
+    }
+
+    private void storeFirestore(Map<String, Object> graphMap) {
+        FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+
+        if(firebaseUser != null)
+        {
+            firebaseFirestore.collection("graphs").document(graphId).update(graphMap).addOnCompleteListener(new OnCompleteListener<Void>() {
+                @Override
+                public void onComplete(@NonNull Task<Void> task) {
+                    if(task.isSuccessful()){
+                        Toast.makeText(PartocalcActivity.this,"Graph data added",Toast.LENGTH_LONG).show();
+                        onBackPressed();
+                        finish();
+                    }
+                }
+            });
+
+        }
+    }
+
 }

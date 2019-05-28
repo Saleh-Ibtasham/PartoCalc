@@ -46,6 +46,7 @@ public class BarActivity extends Fragment {
     boolean pointsAdded;
     BarData barData;
     ImageView imageView;
+    ArrayList<BarEntry> savedEntries = new ArrayList<>();
 
     @Nullable
     @Override
@@ -65,6 +66,7 @@ public class BarActivity extends Fragment {
         myHelper = new MyHelper(getContext());
         sqLiteDatabase = myHelper.getWritableDatabase();
 
+        myHelper.deleteAll();
         dataSets.clear();
         pointsAdded = false;
 
@@ -103,9 +105,13 @@ public class BarActivity extends Fragment {
 
                 value = valueChecking(value);
 
+                yInput.setText(value);
+
                 int yVal = Integer.parseInt(value);
 
                 myHelper.insertData(xVal, yVal);
+                myHelper.deleteAll();
+                savedEntries = getData();
                 if(barDataSet == null)
                     barDataSet = new BarDataSet(getData(),"bardata");
                 else{
@@ -175,6 +181,9 @@ public class BarActivity extends Fragment {
         if(value.equals("sex")|| value.equals("six"))
             return "6";
         return value;
+    }
+    public ArrayList<BarEntry> saveData(){
+        return this.savedEntries;
     }
 
 }

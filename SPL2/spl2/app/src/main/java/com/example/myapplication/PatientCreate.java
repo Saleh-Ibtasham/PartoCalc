@@ -138,6 +138,7 @@ public class PatientCreate extends AppCompatActivity {
                 {
                     Toast.makeText(PatientCreate.this,"Added graph with ID: " + graphId, Toast.LENGTH_LONG).show();
                     Intent calcActivity = new Intent(PatientCreate.this,PartocalcActivity.class);
+                    calcActivity.putExtra("graphId",graphId);
                     startActivity(calcActivity);
                     finish();
                 }

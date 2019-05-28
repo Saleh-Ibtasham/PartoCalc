@@ -30,7 +30,6 @@ import java.util.Locale;
 import static android.app.Activity.RESULT_OK;
 
 public class CervicalActivity extends Fragment {
-    private static final String TAG = "Tab1Fragment";
 
     Button btn,btn2;
     EditText xInput, yInput;
@@ -44,6 +43,7 @@ public class CervicalActivity extends Fragment {
     boolean pointsAdded;
     LineData lineData;
     ImageView imageView;
+    ArrayList<Entry> savedEntries = new ArrayList<>();
 
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.cervix_chart, container, false);
@@ -59,6 +59,7 @@ public class CervicalActivity extends Fragment {
 
         myHelper = new MyHelper(getContext());
         sqLiteDatabase = myHelper.getWritableDatabase();
+        myHelper.deleteAll();
 
         lineDataSet1 = new LineDataSet(null,null);
         lineDataSet2 = new LineDataSet(null,null);
@@ -89,13 +90,16 @@ public class CervicalActivity extends Fragment {
         XAxis xAxis = graph.getXAxis();
         YAxis yAxis = graph.getAxisLeft();
 
-        xAxis.setAxisMaximum(30);
+        yAxis.setLabelCount(6,true);
+        xAxis.setLabelCount(25,true);
+        xAxis.setAxisMaximum(24);
         yAxis.setAxisMaximum(15);
         xAxis.setAxisMinimum(0);
         yAxis.setAxisMinimum(0);
         yAxis.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
         yAxis.setGranularity(1f);
         xAxis.setGranularity(1f);
+
 
         graph.setData(lineData);
         graph.invalidate();
@@ -130,11 +134,15 @@ public class CervicalActivity extends Fragment {
 
                 value = valueChecking(value);
 
+                yInput.setText(value);
+
                 int yVal = Integer.parseInt(value);
 
                 myHelper.insertData(xVal, yVal);
 
                 lineDataSet.clear();
+                myHelper.deleteAll();
+                savedEntries = getData();
                 lineDataSet.setValues(getData());
                 lineDataSet.setLabel("Readings");
                 lineDataSet.setDrawCircles(true);
@@ -212,4 +220,8 @@ public class CervicalActivity extends Fragment {
         return dp;
     }
 
+    public ArrayList<Entry> saveData(){
+
+        return this.savedEntries;
+    }
 }

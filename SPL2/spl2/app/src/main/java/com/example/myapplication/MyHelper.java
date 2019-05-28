@@ -44,7 +44,6 @@ public class MyHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getWritableDatabase();
         db.delete("MyGraph",null,null);
 
-        Toast.makeText(con, "Data deleted",Toast.LENGTH_LONG).show();
     }
 
 }
