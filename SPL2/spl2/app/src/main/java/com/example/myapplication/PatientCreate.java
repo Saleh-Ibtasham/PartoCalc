@@ -1,0 +1,152 @@
+package com.example.myapplication;
+
+import android.content.Intent;
+import android.support.annotation.NonNull;
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ProgressBar;
+import android.widget.Toast;
+
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
+
+public class PatientCreate extends AppCompatActivity {
+
+    EditText name,gravida,para,hosNum,membrane,hours,admissionDate,admissionTime;
+    Toolbar toolbar;
+    Button createPatient;
+    ProgressBar progressBar;
+
+    private FirebaseAuth firebaseAuth;
+    private FirebaseFirestore firebaseFirestore;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.patient_form);
+
+        name = findViewById(R.id.patient_name);
+        gravida = findViewById(R.id.gravida);
+        para = findViewById(R.id.para);
+        hosNum = findViewById(R.id.hosnum);
+        membrane = findViewById(R.id.membrane);
+        hours = findViewById(R.id.hours);
+        admissionDate = findViewById(R.id.admission_date);
+        admissionTime = findViewById(R.id.admission_time);
+        createPatient = findViewById(R.id.patient_create);
+        progressBar = findViewById(R.id.progressBar);
+
+        admissionTime.setKeyListener(null);
+        admissionDate.setKeyListener(null);
+
+        admissionDate.setText(new SimpleDateFormat("dd-MM-yyyy").format(Calendar.getInstance().getTime()));
+        admissionTime.setText(new SimpleDateFormat("HH:mm a").format(Calendar.getInstance().getTime()));
+
+        toolbar = findViewById(R.id.settings_toolbar);
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setTitle("Create PatientFile");
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
+        firebaseFirestore = FirebaseFirestore.getInstance();
+
+        createPatient.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                final String patient_name = name.getText().toString();
+                final String patient_gravida = gravida.getText().toString();
+                final String patient_para = para.getText().toString();
+                final String patient_hosnum = hosNum.getText().toString();
+                final String patient_membrane = membrane.getText().toString();
+                final String patient_hour = hours.getText().toString();
+                final String patient_adTime = admissionTime.getText().toString();
+                final String patient_adDate = admissionDate.getText().toString();
+
+                Toast.makeText(PatientCreate.this, "I'm here",Toast.LENGTH_LONG).show();
+
+                if(!TextUtils.isEmpty(patient_name) && !TextUtils.isEmpty(patient_gravida) &&!TextUtils.isEmpty(patient_hosnum)
+                        &&!TextUtils.isEmpty(patient_membrane) &&!TextUtils.isEmpty(patient_para) &&!TextUtils.isEmpty(patient_hour)){
+                    progressBar.setVisibility(View.VISIBLE);
+                    storeFirestore(patient_name,patient_gravida,patient_para,patient_hour,patient_membrane,
+                            patient_para,patient_hosnum,patient_adTime,patient_adDate);
+                }
+            }
+        });
+    }
+    public void storeFirestore(String patient_name, String patient_gravida, String patient_para, String patient_hour,
+                               String patient_membrane, String patientPara, String patient_hosnum, String patient_adTime, String patient_adDate){
+
+        FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+
+        if(firebaseUser != null)
+        {
+            String userId = firebaseUser.getUid();
+            final Map<String, String> userMap = new HashMap<>();
+            userMap.put("name", patient_name);
+            userMap.put("gravida",patient_gravida);
+            userMap.put("para",patient_para);
+            userMap.put("membranes",patient_membrane);
+            userMap.put("hosNum",patient_hosnum);
+            userMap.put("hours",patient_hour);
+            userMap.put("admissionDate",patient_adDate);
+            userMap.put("admissionTime", patient_adTime);
+            userMap.put("userId",userId);
+
+            final String[] s = {""};
+
+            firebaseFirestore.collection("patients").add(userMap).addOnCompleteListener(new OnCompleteListener<DocumentReference>() {
+                @Override
+                public void onComplete(@NonNull Task<DocumentReference> task) {
+                    if(task.isSuccessful())
+                    {
+                        s[0] = task.getResult().getId();
+                        Toast.makeText(PatientCreate.this,"Added patient with ID: " + s[0], Toast.LENGTH_LONG).show();
+                        createGraph(s[0],userMap.get("userId"));
+                    }
+                    else {
+                        String e = task.getException().getMessage();
+                        Toast.makeText(PatientCreate.this,"(FireStore Error) : " + e,Toast.LENGTH_LONG).show();
+                    }
+                }
+            });
+
+            progressBar.setVisibility(View.INVISIBLE);
+        }
+    }
+
+    private void createGraph(final String graphId, String userId) {
+
+        final Map<String , String > newmap = new HashMap<>();
+        newmap.put("userId",userId);
+        firebaseFirestore.collection("graphs").document(graphId).set(newmap).addOnCompleteListener(new OnCompleteListener<Void>() {
+            @Override
+            public void onComplete(@NonNull Task<Void> task) {
+                if(task.isSuccessful())
+                {
+                    Toast.makeText(PatientCreate.this,"Added graph with ID: " + graphId, Toast.LENGTH_LONG).show();
+                    Intent calcActivity = new Intent(PatientCreate.this,PartocalcActivity.class);
+                    startActivity(calcActivity);
+                    finish();
+                }
+                else{
+                    String e = task.getException().getMessage();
+                    Toast.makeText(PatientCreate.this,"(FireStore Error) : " + e,Toast.LENGTH_LONG).show();
+                }
+            }
+        });
+    }
+
+}

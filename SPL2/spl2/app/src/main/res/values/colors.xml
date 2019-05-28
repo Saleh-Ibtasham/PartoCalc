@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#595BE7</color>
+    <color name="colorPrimaryDark">#397CF7</color>
+    <color name="colorAccent">#4083EE</color>
+
+    <color name="btncolor">#F44336</color>
+    <color name="whitetransparent">#80FFFFFF</color>
+
+
+    <color name="whiteTransparentHalf">#80FFFFFF</color>
+
+    <color name="likeBtnGray">#747474</color>
+</resources>

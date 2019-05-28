@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:icon="@drawable/ic_save_black_24dp"
+        android:title="@string/calc_save_btn" />
+    <item android:title="@string/calc_refresh_btn" />
+    <item
+        android:icon="@drawable/ic_power_settings_new_black_24dp"
+        android:title="@string/calc_logout_btn" />
+</menu>

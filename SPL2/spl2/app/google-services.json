@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "912484966085",
+    "firebase_url": "https://partocalc-662b6.firebaseio.com",
+    "project_id": "partocalc-662b6",
+    "storage_bucket": "partocalc-662b6.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:912484966085:android:13c3c6a65bcbec53",
+        "android_client_info": {
+          "package_name": "com.example.myapplication"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "912484966085-d3akrij0v0rgv7rk6c2j5ugk24gf1i31.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.myapplication",
+            "certificate_hash": "8b72e82617c690e11340f9a22bab73e36551fbeb"
+          }
+        },
+        {
+          "client_id": "912484966085-1h5pmoquegmd5ltnrlk55ihnsds7v0bm.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA-jt5LvtQGCr0xGG7mVB2VuWY93MMWueU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "912484966085-1h5pmoquegmd5ltnrlk55ihnsds7v0bm.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
