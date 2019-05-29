@@ -13,9 +13,11 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".PatientCreate"
+        <activity android:name=".PassResetActivity"></activity>
+        <activity
+            android:name=".PatientCreate"
             android:label="Create Patient"
-            android:parentActivityName=".MainActivity"></activity>
+            android:parentActivityName=".MainActivity" />
         <activity android:name=".AccountSettings" />
         <activity android:name=".RegisterActivity" />
         <activity

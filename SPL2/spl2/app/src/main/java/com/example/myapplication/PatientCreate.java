@@ -1,15 +1,22 @@
 package com.example.myapplication;
 
+import android.app.DatePickerDialog;
+import android.app.TimePickerDialog;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ProgressBar;
+import android.widget.TimePicker;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -34,6 +41,10 @@ public class PatientCreate extends AppCompatActivity {
     private FirebaseAuth firebaseAuth;
     private FirebaseFirestore firebaseFirestore;
 
+    private DatePickerDialog.OnDateSetListener mDateSetListener;
+    private TimePickerDialog timePickerDialog;
+    private String amPm;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -50,11 +61,6 @@ public class PatientCreate extends AppCompatActivity {
         createPatient = findViewById(R.id.patient_create);
         progressBar = findViewById(R.id.progressBar);
 
-        admissionTime.setKeyListener(null);
-        admissionDate.setKeyListener(null);
-
-        admissionDate.setText(new SimpleDateFormat("dd-MM-yyyy").format(Calendar.getInstance().getTime()));
-        admissionTime.setText(new SimpleDateFormat("HH:mm a").format(Calendar.getInstance().getTime()));
 
         toolbar = findViewById(R.id.settings_toolbar);
         setSupportActionBar(toolbar);
@@ -83,6 +89,58 @@ public class PatientCreate extends AppCompatActivity {
                     storeFirestore(patient_name,patient_gravida,patient_para,patient_hour,patient_membrane,
                             patient_para,patient_hosnum,patient_adTime,patient_adDate);
                 }
+            }
+        });
+
+        admissionDate.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Calendar cal = Calendar.getInstance();
+                int year = cal.get(Calendar.YEAR);
+                int month = cal.get(Calendar.MONTH);
+                int day = cal.get(Calendar.DAY_OF_MONTH);
+
+                DatePickerDialog dialog = new DatePickerDialog(
+                        PatientCreate.this,
+                        android.R.style.Theme_Holo_Light_Dialog_MinWidth,
+                        mDateSetListener,
+                        year,month,day);
+                dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+                dialog.show();
+            }
+        });
+
+        mDateSetListener = new DatePickerDialog.OnDateSetListener() {
+            @Override
+            public void onDateSet(DatePicker datePicker, int year, int month, int day) {
+                month = month + 1;
+
+                String date = month + "/" + day + "/" + year;
+                admissionDate.setText(date);
+            }
+        };
+
+        admissionTime.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Calendar calendar = Calendar.getInstance();
+                int currentHour = calendar.get(Calendar.HOUR_OF_DAY);
+                int currentMinute = calendar.get(Calendar.MINUTE);
+
+
+                timePickerDialog = new TimePickerDialog(PatientCreate.this, new TimePickerDialog.OnTimeSetListener() {
+                    @Override
+                    public void onTimeSet(TimePicker timePicker, int hourOfDay, int minutes) {
+                        if (hourOfDay >= 12) {
+                            amPm = "PM";
+                        } else {
+                            amPm = "AM";
+                        }
+                        admissionTime.setText(String.format("%02d:%02d", hourOfDay, minutes) + amPm);
+                    }
+                }, currentHour, currentMinute, false);
+
+                timePickerDialog.show();
             }
         });
     }

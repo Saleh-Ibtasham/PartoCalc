@@ -74,7 +74,7 @@
         app:layout_constraintTop_toBottomOf="@+id/pass_txt" />
 
     <Button
-        android:id="@+id/reg_btn"
+        android:id="@+id/login_btn"
         android:layout_width="match_parent"
         android:layout_height="47dp"
         android:layout_marginStart="8dp"

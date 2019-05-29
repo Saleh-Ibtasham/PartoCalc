@@ -66,7 +66,7 @@ public class BarActivity extends Fragment {
         myHelper = new MyHelper(getContext());
         sqLiteDatabase = myHelper.getWritableDatabase();
 
-        myHelper.deleteAll();
+
         dataSets.clear();
         pointsAdded = false;
 
@@ -109,8 +109,13 @@ public class BarActivity extends Fragment {
 
                 int yVal = Integer.parseInt(value);
 
+                if(pointsAdded == false)
+                {
+                    myHelper.deleteAll();
+                }
+
                 myHelper.insertData(xVal, yVal);
-                myHelper.deleteAll();
+
                 savedEntries = getData();
                 if(barDataSet == null)
                     barDataSet = new BarDataSet(getData(),"bardata");
@@ -124,6 +129,7 @@ public class BarActivity extends Fragment {
                 graph.setData(barData);
                 graph.invalidate();
 
+                pointsAdded = true;
                 int x = Integer.parseInt(xInput.getText().toString());
                 x += 4;
                 xInput.setText(Integer.toString(x));
@@ -184,6 +190,18 @@ public class BarActivity extends Fragment {
     }
     public ArrayList<BarEntry> saveData(){
         return this.savedEntries;
+    }
+
+    public void refreshData(){
+        pointsAdded = false;
+        graph.clear();
+
+        barData.removeDataSet(barDataSet);
+        graph.setData(barData);
+        graph.invalidate();
+        myHelper.deleteAll();
+        xInput.setText(Integer.toString(0));
+        yInput.setText("");
     }
 
 }

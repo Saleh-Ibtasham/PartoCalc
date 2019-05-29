@@ -12,6 +12,8 @@ public class Patient extends PatientId {
     private String admissionTime;
     private String id;
 
+    public Patient(){}
+
     public Patient(String name, String gravida, String para, String hospitalNumber, String hours, String membrane, String admissionDate, String admissionTime, String id) {
         this.name = name;
         this.gravida = gravida;

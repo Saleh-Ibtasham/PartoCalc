@@ -64,8 +64,6 @@ public class FetalHeartRate extends Fragment {
         myHelper = new MyHelper(getContext());
         sqLiteDatabase = myHelper.getWritableDatabase();
 
-        myHelper.deleteAll();
-
         lineDataSet1 = new LineDataSet(null,null);
         lineDataSet2 = new LineDataSet(null,null);
 
@@ -142,10 +140,15 @@ public class FetalHeartRate extends Fragment {
 
                 int yVal = Integer.parseInt(value);
 
+                if(pointsAdded == false)
+                {
+                    myHelper.deleteAll();
+                }
+
                 myHelper.insertData(xVal, yVal);
 
                 lineDataSet.clear();
-                myHelper.deleteAll();
+
                 savedEntries = getData();
                 lineDataSet.setValues(getData());
                 lineDataSet.setLabel("Readings");
@@ -159,6 +162,8 @@ public class FetalHeartRate extends Fragment {
                 graph.clear();
                 graph.setData(lineData);
                 graph.invalidate();
+
+                pointsAdded = true;
 
                 int x = Integer.parseInt(xInput.getText().toString());
                 x += 4;
@@ -222,5 +227,17 @@ public class FetalHeartRate extends Fragment {
     public ArrayList<Entry> saveData(){
 
         return this.savedEntries;
+    }
+
+    public void refreshData(){
+        pointsAdded = false;
+        graph.clear();
+
+        lineData.removeDataSet(lineDataSet);
+        graph.setData(lineData);
+        graph.invalidate();
+        myHelper.deleteAll();
+        xInput.setText(Integer.toString(0));
+        yInput.setText("");
     }
 }

@@ -109,13 +109,59 @@ public class PartocalcActivity extends AppCompatActivity{
             return true;
         }
         else if (id == R.id.refresh_grpahs){
-
+            refreshGraphs();
+            return true;
         }
         else if( id == R.id.delete_graphs){
-
+            deleteGraphs();
+            return true;
         }
 
         return true;
+    }
+
+    private void deleteGraphs() {
+        firebaseFirestore.collection("graphs").document(graphId).delete().addOnCompleteListener(new OnCompleteListener<Void>() {
+            @Override
+            public void onComplete(@NonNull Task<Void> task) {
+                if(task.isSuccessful())
+                {
+                    Toast.makeText(PartocalcActivity.this,"Graphs have been deleted",Toast.LENGTH_LONG).show();
+                    deletePatient();
+                }
+            }
+        });
+    }
+
+    private void deletePatient() {
+        firebaseFirestore.collection("patients").document(graphId).delete().addOnCompleteListener(new OnCompleteListener<Void>() {
+            @Override
+            public void onComplete(@NonNull Task<Void> task) {
+                if(task.isSuccessful())
+                {
+                    Toast.makeText(PartocalcActivity.this,"Patient entry has also been deleted",Toast.LENGTH_LONG).show();
+                    onBackPressed();
+                    finish();
+                }
+            }
+        });
+    }
+
+    private void refreshGraphs() {
+
+        List<Fragment> fragments = getSupportFragmentManager().getFragments();
+
+        for(Fragment f: fragments){
+            if(f instanceof CervicalActivity){
+                ((CervicalActivity) f).refreshData();
+            }
+            else if(f instanceof BarActivity){
+                ((BarActivity) f).refreshData();
+            }
+            else if(f instanceof FetalHeartRate){
+                ((FetalHeartRate) f).refreshData();
+            }
+        }
     }
 
     private void saveGraphs() {

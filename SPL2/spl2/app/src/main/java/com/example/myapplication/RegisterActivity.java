@@ -38,7 +38,7 @@ public class RegisterActivity extends AppCompatActivity {
         reg_email_field = findViewById(R.id.email_txt);
         reg_pass_field = findViewById(R.id.pass_txt);
         reg_confirm_pass_field = findViewById(R.id.conf_txt);
-        reg_btn = findViewById(R.id.reg_btn);
+        reg_btn = findViewById(R.id.login_btn);
         reg_login_btn = findViewById(R.id.reg_login_btn);
         reg_progress = findViewById(R.id.reg_progress);
 

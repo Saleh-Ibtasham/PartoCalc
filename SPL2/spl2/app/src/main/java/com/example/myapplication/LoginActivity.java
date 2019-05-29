@@ -13,7 +13,6 @@ import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
-import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -24,6 +23,7 @@ public class LoginActivity extends AppCompatActivity {
     private EditText loginPassText;
     private Button loginBtn;
     private Button loginRegBtn;
+    private Button passReset;
 
     private FirebaseAuth mAuth;
 
@@ -37,9 +37,10 @@ public class LoginActivity extends AppCompatActivity {
 
         loginEmailText = findViewById(R.id.email_txt);
         loginPassText = findViewById(R.id.pass_txt);
-        loginBtn = findViewById(R.id.login_btn);
-        loginRegBtn = findViewById(R.id.reg_btn);
+        loginBtn = findViewById(R.id.reset_btn);
+        loginRegBtn = findViewById(R.id.login_btn);
         loginProgress = findViewById(R.id.progressBar);
+        passReset = findViewById(R.id.pass_reset);
 
         loginRegBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -73,7 +74,7 @@ public class LoginActivity extends AppCompatActivity {
                             } else {
 
                                 String errorMessage = task.getException().getMessage();
-                                Toast.makeText(LoginActivity.this, "Error : Email or Password don't match", Toast.LENGTH_LONG).show();
+                                Toast.makeText(LoginActivity.this, "Error : Invalid Email or Password", Toast.LENGTH_LONG).show();
 
 
                             }
@@ -89,6 +90,14 @@ public class LoginActivity extends AppCompatActivity {
                 }
 
 
+            }
+        });
+
+        passReset.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent resetIntent = new Intent(LoginActivity.this,PassResetActivity.class);
+                startActivity(resetIntent);
             }
         });
     }
