@@ -27,6 +27,7 @@ import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
@@ -67,17 +68,6 @@ public class DashRecyclerAdapter extends RecyclerView.Adapter<DashRecyclerAdapte
         final String blogPostId = dash_list.get(position).PatientId;
         final String currentUserId = firebaseAuth.getCurrentUser().getUid();
 
-//        ArrayList<String> desctext = new ArrayList<>();
-//        desctext.add(dash_list.get(position).getName());
-//        desctext.add(dash_list.get(position).getGravida());
-//        desctext.add(dash_list.get(position).getPara());
-//        desctext.add(dash_list.get(position).getHospitalNumber());
-//        desctext.add(dash_list.get(position).getHours());
-//        desctext.add(dash_list.get(position).getMembrane());
-//        desctext.add(dash_list.get(position).getAdmissionDate());
-//        desctext.add(dash_list.get(position).getAdmissionTime());
-//
-//        holder.setDashItem(desctext);
 
         String user_id = dash_list.get(position).getId();
 
@@ -87,30 +77,29 @@ public class DashRecyclerAdapter extends RecyclerView.Adapter<DashRecyclerAdapte
             @Override
             public void onComplete(@NonNull Task<QuerySnapshot> task) {
                 if(task.isSuccessful()){
+                    for (QueryDocumentSnapshot document : task.getResult()) {
+                        createHolder(holder,document);
+                    }
 
-                    createHolder(holder);
                 }
             }
         });
 
 
-
     }
 
-    private void createHolder(ViewHolder holder) {
-//        list = querySnapshot.getResult().getDocuments();
-//        for (DocumentSnapshot document : list) {
-//            ArrayList<String> desctext = new ArrayList<>();
-//            desctext.add(document.get("name").toString());
-//            desctext.add(document.get("gradiva").toString());
-//            desctext.add(document.get("para").toString());
-//            desctext.add(document.get("hosNum").toString());
-//            desctext.add(document.get("hours").toString());
-//            desctext.add(document.get("membranes").toString());
-//            desctext.add(document.get("admissionDate").toString());
-//            desctext.add(document.get("admissionTime").toString());
-//            holder.setDashItem(desctext);
-//        }
+    private void createHolder(ViewHolder holder,QueryDocumentSnapshot document) {
+
+        ArrayList<String> desctext = new ArrayList<>();
+        desctext.add(document.get("name").toString());
+        desctext.add(document.get("gravida").toString());
+        desctext.add(document.get("para").toString());
+        desctext.add(document.get("hosNum").toString());
+        desctext.add(document.get("hours").toString());
+        desctext.add(document.get("membranes").toString());
+        desctext.add(document.get("admissionDate").toString());
+        desctext.add(document.get("admissionTime").toString());
+        holder.setDashItem(desctext);
     }
 
     @Override

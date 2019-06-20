@@ -81,7 +81,7 @@ public class PatientCreate extends AppCompatActivity {
                 final String patient_adTime = admissionTime.getText().toString();
                 final String patient_adDate = admissionDate.getText().toString();
 
-                Toast.makeText(PatientCreate.this, "I'm here",Toast.LENGTH_LONG).show();
+                Toast.makeText(PatientCreate.this, "Patient Created",Toast.LENGTH_LONG).show();
 
                 if(!TextUtils.isEmpty(patient_name) && !TextUtils.isEmpty(patient_gravida) &&!TextUtils.isEmpty(patient_hosnum)
                         &&!TextUtils.isEmpty(patient_membrane) &&!TextUtils.isEmpty(patient_para) &&!TextUtils.isEmpty(patient_hour)){
@@ -171,7 +171,7 @@ public class PatientCreate extends AppCompatActivity {
                     if(task.isSuccessful())
                     {
                         s[0] = task.getResult().getId();
-                        Toast.makeText(PatientCreate.this,"Added patient with ID: " + s[0], Toast.LENGTH_LONG).show();
+                        //Toast.makeText(PatientCreate.this,"Added patient with ID: " + s[0], Toast.LENGTH_LONG).show();
                         createGraph(s[0],userMap.get("userId"));
                     }
                     else {
