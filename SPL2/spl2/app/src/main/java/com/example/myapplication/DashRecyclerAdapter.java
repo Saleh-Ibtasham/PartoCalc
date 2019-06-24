@@ -65,6 +65,7 @@ public class DashRecyclerAdapter extends RecyclerView.Adapter<DashRecyclerAdapte
 
         holder.setIsRecyclable(false);
 
+
         final String blogPostId = dash_list.get(position).PatientId;
         final String currentUserId = firebaseAuth.getCurrentUser().getUid();
 
