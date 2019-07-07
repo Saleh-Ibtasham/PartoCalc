@@ -1,0 +1,38 @@
+#JSGF V1.0;
+
+grammar menu;
+
+public <menu> = <option> <graph> <tens>* <digits>*;
+
+<option> = input | remove;
+<graph> = patient heart rate | bar chart | fetal heart rate | cervical | systolic;
+<tens> = twenty  |
+         thirty  |
+         forty  |
+         fifty  |
+         sixty  |
+         seventy  |
+         eighty  |
+         ninety  |
+         one hundred and  |
+         two hundred and;
+<digits> = zero  |
+          one   |
+          two   |
+          three |
+          four  |
+          five  |
+          six   |
+          seven |
+          eight |
+          nine  |
+          ten   |
+          eleven  |
+          twelve  |
+          thirteen  |
+          fourteen  |
+          fifteen  |
+          sixteen  |
+          seventeen  |
+          eighteen  |
+          nineteen;

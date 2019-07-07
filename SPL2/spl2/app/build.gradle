@@ -17,6 +17,7 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+    buildToolsVersion = '28.0.3'
 }
 
 repositories {
@@ -51,6 +52,12 @@ dependencies {
     implementation 'com.google.firebase:firebase-firestore:19.0.0'
     implementation 'com.github.vikramezhil:DroidSpeech:v2.0.3'
 
+    implementation project(':pocketsphinx-android-5prealpha-release')
+
 }
 
 apply plugin: 'com.google.gms.google-services'
+
+ant.importBuild 'assets.xml'
+preBuild.dependsOn(list, checksum)
+clean.dependsOn(clean_assets)

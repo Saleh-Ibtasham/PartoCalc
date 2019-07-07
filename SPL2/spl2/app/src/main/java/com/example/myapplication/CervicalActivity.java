@@ -33,15 +33,15 @@ public class CervicalActivity extends Fragment {
 
     Button btn,btn2;
     EditText xInput, yInput;
-    LineDataSet lineDataSet = new LineDataSet(null,null);
-    LineDataSet lineDataSet1,lineDataSet2;
+    LineDataSet cervicalDataSet = new LineDataSet(null,null);
+    LineDataSet cervicalDataSet1, cervicalDataSet2;
     ArrayList<ILineDataSet> dataSets = new ArrayList<>();
     ArrayList<Entry> temp = new ArrayList<>();
     MyHelper myHelper;
     SQLiteDatabase sqLiteDatabase;
-    LineChart graph;
+    LineChart cervicalGraph;
     boolean pointsAdded;
-    LineData lineData;
+    LineData cervicalData;
     ImageView imageView;
     ArrayList<Entry> savedEntries = new ArrayList<>();
 
@@ -51,7 +51,7 @@ public class CervicalActivity extends Fragment {
         btn2 = (Button) view.findViewById(R.id.button2);
         xInput = (EditText) view.findViewById(R.id.editText);
         yInput = (EditText) view.findViewById(R.id.editText2);
-        graph = (LineChart) view.findViewById(R.id.graph1);
+        cervicalGraph = (LineChart) view.findViewById(R.id.graph1);
         imageView = (ImageView) view.findViewById(R.id.imageView);
 
         xInput.setKeyListener(null);
@@ -61,34 +61,34 @@ public class CervicalActivity extends Fragment {
         sqLiteDatabase = myHelper.getWritableDatabase();
 
 
-        lineDataSet1 = new LineDataSet(null,null);
-        lineDataSet2 = new LineDataSet(null,null);
+        cervicalDataSet1 = new LineDataSet(null,null);
+        cervicalDataSet2 = new LineDataSet(null,null);
 
         dataSets.clear();
-        lineDataSet1.addEntry(new Entry(0,4));
-        lineDataSet1.addEntry(new Entry(12,10));
-        lineDataSet1.setColor(Color.GREEN);
-        lineDataSet1.setLineWidth(5);
-        lineDataSet1.setLabel("Alert");
+        cervicalDataSet1.addEntry(new Entry(0,4));
+        cervicalDataSet1.addEntry(new Entry(12,10));
+        cervicalDataSet1.setColor(Color.GREEN);
+        cervicalDataSet1.setLineWidth(5);
+        cervicalDataSet1.setLabel("Alert");
 
-        lineDataSet2.addEntry(new Entry(8,4));
-        lineDataSet2.addEntry(new Entry(20,10));
-        lineDataSet2.setColor(Color.RED);
-        lineDataSet2.setLineWidth(5);
-        lineDataSet2.setLabel("Action");
+        cervicalDataSet2.addEntry(new Entry(8,4));
+        cervicalDataSet2.addEntry(new Entry(20,10));
+        cervicalDataSet2.setColor(Color.RED);
+        cervicalDataSet2.setLineWidth(5);
+        cervicalDataSet2.setLabel("Action");
 
         pointsAdded = false;
 
         xInput.setText(Integer.toString(0));
-//        lineDataSet.clear();
-//        lineDataSet.setLabel("Readings");
+//        FetalDataSet.clear();
+//        FetalDataSet.setLabel("Readings");
 
-        lineData = new LineData();
-        lineData.addDataSet(lineDataSet1);
-        lineData.addDataSet(lineDataSet2);
+        cervicalData = new LineData();
+        cervicalData.addDataSet(cervicalDataSet1);
+        cervicalData.addDataSet(cervicalDataSet2);
 
-        XAxis xAxis = graph.getXAxis();
-        YAxis yAxis = graph.getAxisLeft();
+        XAxis xAxis = cervicalGraph.getXAxis();
+        YAxis yAxis = cervicalGraph.getAxisLeft();
 
         yAxis.setLabelCount(6,true);
         xAxis.setLabelCount(25,true);
@@ -101,12 +101,12 @@ public class CervicalActivity extends Fragment {
         xAxis.setGranularity(1f);
 
 
-        graph.setData(lineData);
-        graph.invalidate();
+        cervicalGraph.setData(cervicalData);
+        cervicalGraph.invalidate();
         execBtn();
 
 
-        lineDataSet.setLineWidth(5);
+        cervicalDataSet.setLineWidth(5);
         return view;
     }
     private void execBtn() {
@@ -127,7 +127,7 @@ public class CervicalActivity extends Fragment {
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                lineData.removeDataSet(lineDataSet);
+                cervicalData.removeDataSet(cervicalDataSet);
                 String value = null;
                 int xVal = Integer.parseInt(xInput.getText().toString());
                 value = yInput.getText().toString();
@@ -145,26 +145,26 @@ public class CervicalActivity extends Fragment {
 
                 myHelper.insertData(xVal, yVal);
 
-                lineDataSet.clear();
+                cervicalDataSet.clear();
 
                 savedEntries = getData();
-                lineDataSet.setValues(getData());
-                lineDataSet.setLabel("Readings");
-                lineDataSet.setDrawCircles(true);
-                lineDataSet.setDrawCircleHole(true);
-                lineDataSet.setCircleColor(Color.CYAN);
-                lineDataSet.setCircleRadius(10);
-                lineDataSet.setCircleHoleRadius(5);
+                cervicalDataSet.setValues(getData());
+                cervicalDataSet.setLabel("Readings");
+                cervicalDataSet.setDrawCircles(true);
+                cervicalDataSet.setDrawCircleHole(true);
+                cervicalDataSet.setCircleColor(Color.CYAN);
+                cervicalDataSet.setCircleRadius(10);
+                cervicalDataSet.setCircleHoleRadius(5);
 
-//                lineDataSet.addEntry(new Entry(xVal,yVal));
+//                FetalDataSet.addEntry(new Entry(xVal,yVal));
 
 //                lineData.clearValues();
 //                lineData.addDataSet(lineDataSet1);
 //                lineData.addDataSet(lineDataSet2);
-                lineData.addDataSet(lineDataSet);
-                graph.clear();
-                graph.setData(lineData);
-                graph.invalidate();
+                cervicalData.addDataSet(cervicalDataSet);
+                cervicalGraph.clear();
+                cervicalGraph.setData(cervicalData);
+                cervicalGraph.invalidate();
 
                 pointsAdded = true;
 
@@ -179,11 +179,11 @@ public class CervicalActivity extends Fragment {
             @Override
             public void onClick(View v) {
                 pointsAdded = false;
-                graph.clear();
+                cervicalGraph.clear();
 //                lineData.clearValues();
-                lineData.removeDataSet(lineDataSet);
-                graph.setData(lineData);
-                graph.invalidate();
+                cervicalData.removeDataSet(cervicalDataSet);
+                cervicalGraph.setData(cervicalData);
+                cervicalGraph.invalidate();
                 myHelper.deleteAll();
                 xInput.setText(Integer.toString(0));
                 yInput.setText("");
@@ -234,11 +234,11 @@ public class CervicalActivity extends Fragment {
 
     public void refreshData(){
         pointsAdded = false;
-        graph.clear();
+        cervicalGraph.clear();
 
-        lineData.removeDataSet(lineDataSet);
-        graph.setData(lineData);
-        graph.invalidate();
+        cervicalData.removeDataSet(cervicalDataSet);
+        cervicalGraph.setData(cervicalData);
+        cervicalGraph.invalidate();
         myHelper.deleteAll();
         xInput.setText(Integer.toString(0));
         yInput.setText("");

@@ -3,7 +3,6 @@ package com.example.myapplication;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.speech.RecognizerIntent;
 import android.support.annotation.Nullable;
@@ -17,13 +16,9 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.github.mikephil.charting.charts.BarChart;
-import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.data.BarData;
 import com.github.mikephil.charting.data.BarDataSet;
 import com.github.mikephil.charting.data.BarEntry;
-import com.github.mikephil.charting.data.Entry;
-import com.github.mikephil.charting.data.LineData;
-import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 
 import java.util.ArrayList;
@@ -37,14 +32,14 @@ public class BarActivity extends Fragment {
 
     Button btn,btn2;
     EditText xInput, yInput;
-    BarDataSet barDataSet;
+    BarDataSet contractionDataSet;
     ArrayList<ILineDataSet> dataSets = new ArrayList<>();
     ArrayList<BarEntry> temp = new ArrayList<>();
     MyHelper myHelper;
     SQLiteDatabase sqLiteDatabase;
-    BarChart graph;
+    BarChart contractionGraph;
     boolean pointsAdded;
-    BarData barData;
+    BarData contractionData;
     ImageView imageView;
     ArrayList<BarEntry> savedEntries = new ArrayList<>();
 
@@ -56,7 +51,7 @@ public class BarActivity extends Fragment {
         btn2 = (Button) view.findViewById(R.id.button2);
         xInput = (EditText) view.findViewById(R.id.editText);
         yInput = (EditText) view.findViewById(R.id.editText2);
-        graph = (BarChart) view.findViewById(R.id.graph1);
+        contractionGraph = (BarChart) view.findViewById(R.id.graph1);
         imageView = (ImageView) view.findViewById(R.id.imageView);
 
         xInput.setKeyListener(null);
@@ -70,10 +65,10 @@ public class BarActivity extends Fragment {
         dataSets.clear();
         pointsAdded = false;
 
-        barData = new BarData();
+        contractionData = new BarData();
         xInput.setText(Integer.toString(0));
-//        lineDataSet.clear();
-//        lineDataSet.setLabel("Readings");
+//        FetalDataSet.clear();
+//        FetalDataSet.setLabel("Readings");
 
         execBtn();
 
@@ -97,7 +92,7 @@ public class BarActivity extends Fragment {
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                barData.removeDataSet(barDataSet);
+                contractionData.removeDataSet(contractionDataSet);
                 String value = null;
                 int xVal = Integer.parseInt(xInput.getText().toString());
 
@@ -117,17 +112,17 @@ public class BarActivity extends Fragment {
                 myHelper.insertData(xVal, yVal);
 
                 savedEntries = getData();
-                if(barDataSet == null)
-                    barDataSet = new BarDataSet(getData(),"bardata");
+                if(contractionDataSet == null)
+                    contractionDataSet = new BarDataSet(getData(),"bardata");
                 else{
-                    barDataSet.clear();
-                    barDataSet.setValues(getData());
+                    contractionDataSet.clear();
+                    contractionDataSet.setValues(getData());
                 }
 
-                barData.addDataSet(barDataSet);
-                graph.clear();
-                graph.setData(barData);
-                graph.invalidate();
+                contractionData.addDataSet(contractionDataSet);
+                contractionGraph.clear();
+                contractionGraph.setData(contractionData);
+                contractionGraph.invalidate();
 
                 pointsAdded = true;
                 int x = Integer.parseInt(xInput.getText().toString());
@@ -141,11 +136,11 @@ public class BarActivity extends Fragment {
             @Override
             public void onClick(View v) {
                 pointsAdded = false;
-                graph.clear();
+                contractionGraph.clear();
 //                lineData.clearValues();
-                barData.removeDataSet(barDataSet);
-                graph.setData(barData);
-                graph.invalidate();
+                contractionData.removeDataSet(contractionDataSet);
+                contractionGraph.setData(contractionData);
+                contractionGraph.invalidate();
                 myHelper.deleteAll();
                 xInput.setText(Integer.toString(0));
                 yInput.setText("");
@@ -194,11 +189,11 @@ public class BarActivity extends Fragment {
 
     public void refreshData(){
         pointsAdded = false;
-        graph.clear();
+        contractionGraph.clear();
 
-        barData.removeDataSet(barDataSet);
-        graph.setData(barData);
-        graph.invalidate();
+        contractionData.removeDataSet(contractionDataSet);
+        contractionGraph.setData(contractionData);
+        contractionGraph.invalidate();
         myHelper.deleteAll();
         xInput.setText(Integer.toString(0));
         yInput.setText("");

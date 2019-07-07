@@ -70,8 +70,8 @@ public class MaternalReadings extends Fragment {
         pointsAdded = false;
 
         xInput.setText(Integer.toString(0));
-//        lineDataSet.clear();
-//        lineDataSet.setLabel("Readings");
+//        FetalDataSet.clear();
+//        FetalDataSet.setLabel("Readings");
 
         lineData = new LineData();
 
@@ -134,7 +134,7 @@ public class MaternalReadings extends Fragment {
                 lineDataSet.setCircleRadius(10);
                 lineDataSet.setCircleHoleRadius(5);
 
-//                lineDataSet.addEntry(new Entry(xVal,yVal));
+//                FetalDataSet.addEntry(new Entry(xVal,yVal));
 
 //                lineData.clearValues();
 //                lineData.addDataSet(lineDataSet1);

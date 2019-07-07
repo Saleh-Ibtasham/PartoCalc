@@ -28,7 +28,8 @@
         <activity
             android:name=".PartocalcActivity"
             android:label="Generate A Graph"
-            android:parentActivityName=".MainActivity" />
+            android:parentActivityName=".MainActivity"
+            android:screenOrientation="portrait"/>
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

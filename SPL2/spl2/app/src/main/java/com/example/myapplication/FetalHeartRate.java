@@ -1,11 +1,9 @@
 package com.example.myapplication;
 
-import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
-import android.net.Uri;
 import android.os.Bundle;
 import android.speech.RecognizerIntent;
 import android.support.v4.app.Fragment;
@@ -34,15 +32,15 @@ public class FetalHeartRate extends Fragment {
 
     Button btn,btn2;
     EditText xInput, yInput;
-    LineDataSet lineDataSet = new LineDataSet(null,null);
-    LineDataSet lineDataSet1,lineDataSet2;
+    LineDataSet fetalDataSet = new LineDataSet(null,null);
+    LineDataSet fetalDataSet1, fetalDataSet2;
     ArrayList<ILineDataSet> dataSets = new ArrayList<>();
     ArrayList<Entry> temp = new ArrayList<>();
     MyHelper myHelper;
     SQLiteDatabase sqLiteDatabase;
-    LineChart graph;
+    LineChart fetalGraph;
     boolean pointsAdded;
-    LineData lineData;
+    LineData fetalData;
     ImageView imageView;
     ArrayList<Entry> savedEntries = new ArrayList<>();
 
@@ -55,7 +53,7 @@ public class FetalHeartRate extends Fragment {
         btn2 = (Button) view.findViewById(R.id.button2);
         xInput = (EditText) view.findViewById(R.id.editText);
         yInput = (EditText) view.findViewById(R.id.editText2);
-        graph = (LineChart) view.findViewById(R.id.graph1);
+        fetalGraph = (LineChart) view.findViewById(R.id.graph1);
         imageView = (ImageView) view.findViewById(R.id.imageView);
 
         xInput.setKeyListener(null);
@@ -64,34 +62,34 @@ public class FetalHeartRate extends Fragment {
         myHelper = new MyHelper(getContext());
         sqLiteDatabase = myHelper.getWritableDatabase();
 
-        lineDataSet1 = new LineDataSet(null,null);
-        lineDataSet2 = new LineDataSet(null,null);
+        fetalDataSet1 = new LineDataSet(null,null);
+        fetalDataSet2 = new LineDataSet(null,null);
 
         dataSets.clear();
-        lineDataSet1.addEntry(new Entry(0,100));
-        lineDataSet1.addEntry(new Entry(24,100));
-        lineDataSet1.setColor(Color.GRAY);
-        lineDataSet1.setLineWidth(5);
-        lineDataSet1.setLabel("Alert");
+        fetalDataSet1.addEntry(new Entry(0,100));
+        fetalDataSet1.addEntry(new Entry(24,100));
+        fetalDataSet1.setColor(Color.GRAY);
+        fetalDataSet1.setLineWidth(5);
+        fetalDataSet1.setLabel("lower-limit");
 
-        lineDataSet2.addEntry(new Entry(0,180));
-        lineDataSet2.addEntry(new Entry(24,180));
-        lineDataSet2.setColor(Color.GRAY);
-        lineDataSet2.setLineWidth(5);
-        lineDataSet2.setLabel("Action");
+        fetalDataSet2.addEntry(new Entry(0,180));
+        fetalDataSet2.addEntry(new Entry(24,180));
+        fetalDataSet2.setColor(Color.GRAY);
+        fetalDataSet2.setLineWidth(5);
+        fetalDataSet2.setLabel("upper-limit");
 
         pointsAdded = false;
 
         xInput.setText(Integer.toString(0));
-//        lineDataSet.clear();
-//        lineDataSet.setLabel("Readings");
+//        FetalDataSet.clear();
+//        FetalDataSet.setLabel("Readings");
 
-        lineData = new LineData();
-        lineData.addDataSet(lineDataSet1);
-        lineData.addDataSet(lineDataSet2);
+        fetalData = new LineData();
+        fetalData.addDataSet(fetalDataSet1);
+        fetalData.addDataSet(fetalDataSet2);
 
-        XAxis xAxis = graph.getXAxis();
-        YAxis yAxis = graph.getAxisLeft();
+        XAxis xAxis = fetalGraph.getXAxis();
+        YAxis yAxis = fetalGraph.getAxisLeft();
 
         yAxis.setLabelCount(13,true);
         xAxis.setLabelCount(25,true);
@@ -103,12 +101,12 @@ public class FetalHeartRate extends Fragment {
         yAxis.setGranularity(1f);
         xAxis.setGranularity(1f);
 
-        graph.setData(lineData);
-        graph.invalidate();
+        fetalGraph.setData(fetalData);
+        fetalGraph.invalidate();
         execBtn();
 
 
-        lineDataSet.setLineWidth(5);
+        fetalDataSet.setLineWidth(5);
         return view;
     }
     private void execBtn() {
@@ -129,7 +127,7 @@ public class FetalHeartRate extends Fragment {
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                lineData.removeDataSet(lineDataSet);
+                fetalData.removeDataSet(fetalDataSet);
                 String value = null;
                 int xVal = Integer.parseInt(xInput.getText().toString());
                 value = yInput.getText().toString();
@@ -147,21 +145,21 @@ public class FetalHeartRate extends Fragment {
 
                 myHelper.insertData(xVal, yVal);
 
-                lineDataSet.clear();
+                fetalDataSet.clear();
 
                 savedEntries = getData();
-                lineDataSet.setValues(getData());
-                lineDataSet.setLabel("Readings");
-                lineDataSet.setDrawCircles(true);
-                lineDataSet.setDrawCircleHole(true);
-                lineDataSet.setCircleColor(Color.CYAN);
-                lineDataSet.setCircleRadius(6);
-                lineDataSet.setCircleHoleRadius(3);
+                fetalDataSet.setValues(getData());
+                fetalDataSet.setLabel("Readings");
+                fetalDataSet.setDrawCircles(true);
+                fetalDataSet.setDrawCircleHole(true);
+                fetalDataSet.setCircleColor(Color.CYAN);
+                fetalDataSet.setCircleRadius(6);
+                fetalDataSet.setCircleHoleRadius(3);
 
-                lineData.addDataSet(lineDataSet);
-                graph.clear();
-                graph.setData(lineData);
-                graph.invalidate();
+                fetalData.addDataSet(fetalDataSet);
+                fetalGraph.clear();
+                fetalGraph.setData(fetalData);
+                fetalGraph.invalidate();
 
                 pointsAdded = true;
 
@@ -176,11 +174,11 @@ public class FetalHeartRate extends Fragment {
             @Override
             public void onClick(View v) {
                 pointsAdded = false;
-                graph.clear();
+                fetalGraph.clear();
 //                lineData.clearValues();
-                lineData.removeDataSet(lineDataSet);
-                graph.setData(lineData);
-                graph.invalidate();
+                fetalData.removeDataSet(fetalDataSet);
+                fetalGraph.setData(fetalData);
+                fetalGraph.invalidate();
                 myHelper.deleteAll();
                 xInput.setText(Integer.toString(0));
                 yInput.setText("");
@@ -231,11 +229,11 @@ public class FetalHeartRate extends Fragment {
 
     public void refreshData(){
         pointsAdded = false;
-        graph.clear();
+        fetalGraph.clear();
 
-        lineData.removeDataSet(lineDataSet);
-        graph.setData(lineData);
-        graph.invalidate();
+        fetalData.removeDataSet(fetalDataSet);
+        fetalGraph.setData(fetalData);
+        fetalGraph.invalidate();
         myHelper.deleteAll();
         xInput.setText(Integer.toString(0));
         yInput.setText("");
