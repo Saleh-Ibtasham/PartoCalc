@@ -96,7 +96,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 
     private LineDataSet fetalDataSet = new LineDataSet(null,null);
     private LineDataSet cervicalDataSet = new LineDataSet(null,null);
-//    private BarDataSet contractionDataSet = new BarDataSet(null,null);
+    private BarDataSet contractionDataSet;
     private LineDataSet maternalDataSet = new LineDataSet(null,null);
 
     private LineDataSet fetalDataSet1,fetalDataSet2,cervicalDataSet1,cervicalDataSet2;
@@ -122,6 +122,11 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
     private String[] charts = {"fetal heart rate", "cervical", "bar chart", "patient heart rate"};
     private String[] commands = {"input", "remove"};
     private HashMap<String,Chart> chartHashMap;
+
+    private String[] tens = {"twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety", "hundred"};
+    private String[] digits = {"and", "zero", "one", "two", "three", "four", "five", "six",
+            "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen",
+            "sixteen", "seventeen", "eighteen", "nineteen"};
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -266,7 +271,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         yAxis2.setAxisMaximum(200);
         xAxis.setAxisMinimum(0);
         yAxis.setAxisMinimum(80);
-        yAxis2.setAxisMaximum(80);
+        yAxis2.setAxisMinimum(80);
         yAxis.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
         yAxis2.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
         yAxis.setGranularity(1f);
@@ -460,51 +465,70 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
             if(hypothesis.getHypstr().contains("input")){
                 String s = getChart(hypothesis.getHypstr());
                 String s2 = getNumber(hypothesis.getHypstr());
+                if(checkNumberValidity(s2) == false){
+                    Toast.makeText(getApplicationContext(), "invalid input", Toast.LENGTH_LONG).show();
+                    return;
+                }
                 int yVal = convertWordsToNum(s2);
                 if(s.equals(charts[0])){
-                    updateLineChart(fetalData,fetalHelper,fetalDataSet,fetalGraph,yVal, fetalX, fetalPointsAdded, fetalDB);
+                    updateChart1(yVal);
                 }
                 else if(s.equals(charts[1])){
-                    updateLineChart(cervicalData,cervicalHelper,cervicalDataSet,cervicalGraph,yVal, cervicalX, cervicalPointsAdded, cervicalDB);
+                    updateChart2(yVal);
                 }
-//                else if(s.equals(charts[2])){
-//                    updateBarChart(contractionData,contractionHelper,contractionDataSet,contractionGraph,yVal, contractionX, contractionPointsAdded, contractionDB);
-//                }
+                else if(s.equals(charts[2])){
+                    updateChart3(yVal);
+                }
                 else if(s.equals(charts[3])){
-                    updateLineChart(maternalData,maternalHelper,maternalDataSet,maternalGraph,yVal, maternalX, maternalPointsAdded, maternalDB);
+                    updateChart4(yVal);
                 }
 
             }
         }
     }
 
-    private void updateBarChart(BarData barData, MyHelper myHelper, BarDataSet barDataSet, BarChart barChart, int yVal, int xVal, boolean pointsAdded, SQLiteDatabase sqLiteDatabase) {
-        barData.removeDataSet(barDataSet);
-
-        if(pointsAdded == false)
-        {
-            myHelper.deleteAll();
-        }
-
-        myHelper.insertData(xVal, yVal);
-
-        barDataSet.setValues(getBarData(sqLiteDatabase));
-
-        barData.addDataSet(barDataSet);
-        barChart.clear();
-        barChart.setData(contractionData);
-        barChart.invalidate();
-
-        pointsAdded = true;
-
-        xVal += 4;
+    private boolean checkNumberValidity(String s2) {
+        for(String s: tens)
+            if(s2.contains(s))
+                return true;
+        for(String s: digits)
+            if(s2.contains(s))
+                return true;
+        return false;
     }
 
-    private List<BarEntry> getBarData(SQLiteDatabase sqLiteDatabase) {
+    private void updateChart3(int yVal) {
+        contractionData.removeDataSet(contractionDataSet);
+
+        if(contractionPointsAdded == false)
+        {
+            contractionHelper.deleteAll();
+        }
+
+        contractionHelper.insertData(contractionX, yVal);
+
+        if(contractionDataSet == null)
+            contractionDataSet = new BarDataSet(getBarData(),"bardata");
+        else{
+            contractionDataSet.clear();
+            contractionDataSet.setValues(getBarData());
+        }
+
+        contractionData.addDataSet(contractionDataSet);
+        contractionGraph.clear();
+        contractionGraph.setData(contractionData);
+        contractionGraph.invalidate();
+
+        contractionPointsAdded = true;
+
+        contractionX += 4;
+    }
+
+    private List<BarEntry> getBarData() {
         ArrayList<BarEntry> dp = new ArrayList<>();
         String [] columns = {"xValues","yValues"};
 
-        Cursor cursor = sqLiteDatabase.query("MyGraph", columns, null, null, null, null, "xValues ASC");
+        Cursor cursor = contractionDB.query("MyGraph", columns, null, null, null, null, "xValues ASC");
 
         for(int i=0; i<cursor.getCount(); i++)
         {
@@ -616,36 +640,129 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         return finalResult;
     }
 
-    private void updateLineChart(LineData lineData, MyHelper myHelper, LineDataSet lineDataSet, LineChart lineChart, int yVal, int xVal, boolean pointsAdded, SQLiteDatabase sqLiteDatabase) {
-        lineData.removeDataSet(lineDataSet);
+    private void updateChart1(int yVal) {
+        fetalData.removeDataSet(fetalDataSet);
 
-        myHelper.insertData(xVal, yVal);
+        if(fetalPointsAdded == false)
+        {
+            fetalHelper.deleteAll();
+        }
 
-        lineDataSet.clear();
+        fetalHelper.insertData(fetalX, yVal);
 
-        lineDataSet.setValues(getLineData(sqLiteDatabase));
-        lineDataSet.setLabel("Readings");
-        lineDataSet.setDrawCircles(true);
-        lineDataSet.setDrawCircleHole(true);
-        lineDataSet.setCircleColor(Color.CYAN);
-        lineDataSet.setCircleRadius(6);
-        lineDataSet.setCircleHoleRadius(3);
+        fetalDataSet.clear();
 
-        lineData.addDataSet(lineDataSet);
-        lineChart.clear();
-        lineChart.setData(lineData);
-        lineChart.invalidate();
+        fetalDataSet.setValues(getData1());
+        fetalDataSet.setLabel("Readings");
+        fetalDataSet.setDrawCircles(true);
+        fetalDataSet.setDrawCircleHole(true);
+        fetalDataSet.setCircleColor(Color.CYAN);
+        fetalDataSet.setCircleRadius(6);
+        fetalDataSet.setCircleHoleRadius(3);
 
-        pointsAdded = true;
+        fetalData.addDataSet(fetalDataSet);
+        fetalGraph.clear();
+        fetalGraph.setData(fetalData);
+        fetalGraph.invalidate();
 
-        xVal += 4;
+        fetalPointsAdded = true;
+
+        fetalX += 4;
     }
 
-    private ArrayList<Entry> getLineData(SQLiteDatabase sqLiteDatabase) {
+    private void updateChart2(int yVal){
+        cervicalData.removeDataSet(cervicalDataSet);
+
+        if(cervicalPointsAdded == false)
+        {
+            cervicalHelper.deleteAll();
+        }
+
+        cervicalHelper.insertData(cervicalX, yVal);
+
+        cervicalDataSet.clear();
+
+        cervicalDataSet.setValues(getData2());
+        cervicalDataSet.setLabel("Readings");
+        cervicalDataSet.setDrawCircles(true);
+        cervicalDataSet.setDrawCircleHole(true);
+        cervicalDataSet.setCircleColor(Color.CYAN);
+        cervicalDataSet.setCircleRadius(10);
+        cervicalDataSet.setCircleHoleRadius(5);
+
+        cervicalData.addDataSet(cervicalDataSet);
+        cervicalGraph.clear();
+        cervicalGraph.setData(cervicalData);
+        cervicalGraph.invalidate();
+
+        cervicalPointsAdded = true;
+
+        cervicalX += 4;
+    }
+
+    private void updateChart4(int yVal){
+        maternalData.removeDataSet(maternalDataSet);
+
+        if(maternalPointsAdded == false)
+        {
+            maternalHelper.deleteAll();
+        }
+
+        maternalHelper.insertData(maternalX, yVal);
+
+        maternalDataSet.clear();
+
+        maternalDataSet.setValues(getData4());
+        maternalDataSet.setLabel("Readings");
+        maternalDataSet.setDrawCircles(true);
+        maternalDataSet.setDrawCircleHole(true);
+        maternalDataSet.setCircleColor(Color.CYAN);
+        maternalDataSet.setCircleRadius(10);
+        maternalDataSet.setCircleHoleRadius(5);
+
+        maternalData.addDataSet(maternalDataSet);
+        maternalGraph.clear();
+        maternalGraph.setData(maternalData);
+        maternalGraph.invalidate();
+
+        maternalPointsAdded = true;
+
+        maternalX += 4;
+    }
+
+    private ArrayList<Entry> getData1() {
         ArrayList<Entry> dp = new ArrayList<>();
         String [] columns = {"xValues","yValues"};
 
-        Cursor cursor = sqLiteDatabase.query("MyGraph", columns, null, null, null, null, "xValues ASC");
+        Cursor cursor = fetalDB.query("MyGraph", columns, null, null, null, null, "xValues ASC");
+
+        for(int i=0; i<cursor.getCount(); i++)
+        {
+            cursor.moveToNext();
+            dp.add(new Entry(cursor.getInt(0),cursor.getInt(1)));
+        }
+        return dp;
+    }
+
+    private ArrayList<Entry> getData2() {
+        ArrayList<Entry> dp = new ArrayList<>();
+        String [] columns = {"xValues","yValues"};
+
+        Cursor cursor = cervicalDB.query("MyGraph", columns, null, null, null, null, "xValues ASC");
+
+        for(int i=0; i<cursor.getCount(); i++)
+        {
+            cursor.moveToNext();
+            dp.add(new Entry(cursor.getInt(0),cursor.getInt(1)));
+        }
+        return dp;
+    }
+
+    private ArrayList<Entry> getData4() {
+        ArrayList<Entry> dp = new ArrayList<>();
+        String [] columns = {"xValues","yValues"};
+
+        Cursor cursor = maternalDB.query("MyGraph", columns, null, null, null, null, "xValues ASC");
 
         for(int i=0; i<cursor.getCount(); i++)
         {
@@ -708,24 +825,6 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 
         // Create keyword-activation search.
         recognizer.addKeyphraseSearch(KWS_SEARCH, KEYPHRASE);
-
-        // Create grammar-based search for selection between demos
-//        File menuGrammar = new File(assetsDir, "menu.gram");
-//        recognizer.addGrammarSearch(MENU_SEARCH, menuGrammar);
-
-//        // Create grammar-based search for digit recognition
-//        File digitsGrammar = new File(assetsDir, "digits.gram");
-//        recognizer.addGrammarSearch(DIGITS_SEARCH, digitsGrammar);
-//
-//        // Create language model search
-//        File languageModel = new File(assetsDir, "weather.dmp");
-//        recognizer.addNgramSearch(FORECAST_SEARCH, languageModel);
-//
-//        // Phonetic search
-//        File phoneticModel = new File(assetsDir, "en-phone.dmp");
-//        recognizer.addAllphoneSearch(PHONE_SEARCH, phoneticModel);
-
-//        recognizer.addNgramSearch(MENU_SEARCH, new File(assetsDir, "en-us.lm.bin"));
 
         recognizer.addGrammarSearch(MENU_SEARCH, new File(assetsDir, "menu.gram"));
     }
@@ -835,15 +934,15 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
             return true;
         }
         if (id == R.id.save_graphs) {
-            saveGraphs();
+//            saveGraphs();
             return true;
         }
         else if (id == R.id.refresh_grpahs){
-            refreshGraphs();
+//            refreshGraphs();
             return true;
         }
         else if( id == R.id.delete_graphs){
-            deleteGraphs();
+//            deleteGraphs();
             return true;
         }
 
