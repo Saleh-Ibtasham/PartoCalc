@@ -1,6 +1,11 @@
 package com.example.myapplication;
 
 import android.Manifest;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothHeadset;
+import android.bluetooth.BluetoothProfile;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -128,6 +133,13 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
             "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen",
             "sixteen", "seventeen", "eighteen", "nineteen"};
 
+    private BluetoothHeadset bluetoothHeadset;
+    private BluetoothAdapter bluetoothAdapter;
+    private BluetoothProfile.ServiceListener profileListener;
+
+    private BluetoothDevice btDevice;
+
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -141,12 +153,17 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         getSupportActionBar().setTitle("Create Graph");
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        int permissionCheck = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.RECORD_AUDIO);
-        if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, PERMISSIONS_REQUEST_RECORD_AUDIO);
-            return;
+        int PERMISSION_ALL = 1;
+        String[] PERMISSIONS = {
+                Manifest.permission.RECORD_AUDIO,
+                Manifest.permission.BLUETOOTH,
+        };
+
+        if(!hasPermissions(this, PERMISSIONS)){
+            ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSION_ALL);
         }
 
+        setupBluetooth();
 
         createFetal();
         createCervical();
@@ -224,6 +241,54 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 //                openSpeechRecog();
 //            }
 //        });
+    }
+
+    private void setupBluetooth() {
+
+        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        profileListener = new BluetoothProfile.ServiceListener() {
+            public void onServiceConnected(int profile, BluetoothProfile proxy) {
+                if (profile == BluetoothProfile.HEADSET) {
+                    bluetoothHeadset = (BluetoothHeadset) proxy;
+                }
+                Log.d("Bluetooth connected", "onServiceConnected: here");
+
+                List<BluetoothDevice> devices = bluetoothHeadset.getConnectedDevices();
+                if(devices.size() != 1){
+                    Toast.makeText(getApplicationContext(),"Please connect only 1 bluetooth headset",Toast.LENGTH_LONG).show();
+                    return;
+                }
+                btDevice = devices.get(0);
+
+                bluetoothHeadset.startVoiceRecognition(btDevice);
+
+                if(bluetoothHeadset.isAudioConnected(btDevice)){
+                    Toast.makeText(getApplicationContext(),"Bluetooth Audio is connected",Toast.LENGTH_LONG).show();
+                }
+            }
+            public void onServiceDisconnected(int profile) {
+                if (profile == BluetoothProfile.HEADSET) {
+                    bluetoothHeadset = null;
+                }
+                Log.d("Bluetooth disconnected", "onServiceDisconnected: here");
+            }
+        };
+
+        if(bluetoothAdapter.getProfileProxy(getApplicationContext(), profileListener, BluetoothProfile.HEADSET)){
+            Log.d("profile proxy", "setupBluetooth: enabled");
+        }
+
+    }
+
+    public boolean hasPermissions(Context context, String... permissions) {
+        if (context != null && permissions != null) {
+            for (String permission : permissions) {
+                if (ActivityCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     private void createGraphMaps() {
@@ -440,6 +505,9 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
             recognizer.cancel();
             recognizer.shutdown();
         }
+        if(bluetoothHeadset != null)
+            bluetoothHeadset.stopVoiceRecognition(btDevice);
+        bluetoothAdapter.closeProfileProxy(BluetoothProfile.HEADSET,bluetoothHeadset);
     }
 
     @Override
