@@ -4,8 +4,8 @@ grammar menu;
 
 public <menu> = <option> <graph> <tens>* <digits>*;
 
-<option> = input | remove;
-<graph> = patient heart rate | bar chart | fetal heart rate | cervical | systolic;
+<option> = insert;
+<graph> = maternal | contraction | fetal | cervical;
 <tens> = twenty  |
          thirty  |
          forty  |
@@ -14,8 +14,9 @@ public <menu> = <option> <graph> <tens>* <digits>*;
          seventy  |
          eighty  |
          ninety  |
-         one hundred and  |
-         two hundred and;
+         one hundred and |
+         two hundred and ;
+
 <digits> = zero  |
           one   |
           two   |

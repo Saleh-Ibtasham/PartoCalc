@@ -6,39 +6,26 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothHeadset;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Build;
-import android.os.Handler;
-import android.os.PersistableBundle;
-import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.design.widget.TabLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
-import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
-import android.text.format.DateUtils;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.TextView;
+import android.widget.ScrollView;
 import android.widget.Toast;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.charts.Chart;
@@ -51,14 +38,11 @@ import com.github.mikephil.charting.data.BarEntry;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
-import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.storage.FirebaseStorage;
 import com.vikramezhil.droidspeech.DroidSpeech;
 import com.vikramezhil.droidspeech.OnDSListener;
 
@@ -89,12 +73,13 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
     private Toolbar toolbar;
     private String graphId;
     private Button cont;
+    private ScrollView scrollView;
 
     private FirebaseFirestore firebaseFirestore;
 
     private static final String KWS_SEARCH = "wakeup";
     private static final String MENU_SEARCH = "menu";
-    private static final String KEYPHRASE = "hey computer";
+    private static final String KEYPHRASE = "hey wakeup";
 
     private LineChart fetalGraph, cervicalGraph, maternalGraph;
     private BarChart contractionGraph;
@@ -124,13 +109,15 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
     SQLiteDatabase fetalDB, cervicalDB, contractionDB, maternalDB;
 
     private boolean fetalPointsAdded = false , cervicalPointsAdded = false, contractionPointsAdded = false, maternalPointsAdded = false;
-    private String[] charts = {"fetal heart rate", "cervical", "bar chart", "patient heart rate"};
-    private String[] commands = {"input", "remove"};
+    private String[] charts = {"fetal", "cervical", "contraction", "maternal"};
+    private String[] commands = {"insert", "delete"};
     private HashMap<String,Chart> chartHashMap;
 
-    private String[] tens = {"twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety", "hundred"};
+    private String[] tens = {"twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"};
+    private String[] hundreds = {"hundred"};
     private String[] digits = {"and", "zero", "one", "two", "three", "four", "five", "six",
-            "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen",
+            "seven", "eight", "nine", "ten"};
+    private String[] teens = {"eleven", "twelve", "thirteen", "fourteen", "fifteen",
             "sixteen", "seventeen", "eighteen", "nineteen"};
 
     private BluetoothHeadset bluetoothHeadset;
@@ -162,6 +149,8 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         if(!hasPermissions(this, PERMISSIONS)){
             ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSION_ALL);
         }
+
+        scrollView = findViewById(R.id.contents);
 
         setupBluetooth();
 
@@ -408,15 +397,21 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 
         XAxis xAxis = contractionGraph.getXAxis();
         YAxis yAxis = contractionGraph.getAxisLeft();
+        YAxis yAxis2 = contractionGraph.getAxisRight();
 
         yAxis.setLabelCount(6,true);
+        yAxis2.setLabelCount(6,true);
         xAxis.setLabelCount(25,true);
         xAxis.setAxisMaximum(24);
         yAxis.setAxisMaximum(5);
+        yAxis2.setAxisMaximum(5);
         xAxis.setAxisMinimum(0);
         yAxis.setAxisMinimum(0);
+        yAxis2.setAxisMinimum(0);
         yAxis.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
+        yAxis2.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
         yAxis.setGranularity(1f);
+        yAxis2.setGranularity(1f);
         xAxis.setGranularity(1f);
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
 
@@ -530,25 +525,29 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 //        ((TextView) findViewById(R.id.result_text)).setText(hypothesis.getHypstr());
         if (hypothesis != null) {
             Toast.makeText(getApplicationContext(), hypothesis.getHypstr(), Toast.LENGTH_LONG).show();
-            if(hypothesis.getHypstr().contains("input")){
+            if(hypothesis.getHypstr().contains("insert")){
                 String s = getChart(hypothesis.getHypstr());
                 String s2 = getNumber(hypothesis.getHypstr());
-                if(checkNumberValidity(s2) == false){
+                if(!checkNumberValidity(s2)){
                     Toast.makeText(getApplicationContext(), "invalid input", Toast.LENGTH_LONG).show();
                     return;
                 }
                 int yVal = convertWordsToNum(s2);
                 if(s.equals(charts[0])){
                     updateChart1(yVal);
+                    scrollView.smoothScrollTo(0, fetalGraph.getTop());
                 }
                 else if(s.equals(charts[1])){
                     updateChart2(yVal);
+                    scrollView.smoothScrollTo(0, cervicalGraph.getTop());
                 }
                 else if(s.equals(charts[2])){
                     updateChart3(yVal);
+                    scrollView.smoothScrollTo(0, contractionGraph.getTop());
                 }
                 else if(s.equals(charts[3])){
                     updateChart4(yVal);
+                    scrollView.smoothScrollTo(0, maternalGraph.getTop());
                 }
 
             }
@@ -556,13 +555,94 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
     }
 
     private boolean checkNumberValidity(String s2) {
-        for(String s: tens)
-            if(s2.contains(s))
-                return true;
-        for(String s: digits)
-            if(s2.contains(s))
-                return true;
-        return false;
+        String []words = s2.split(" ");
+
+        Toast.makeText(getApplicationContext(), "input here", Toast.LENGTH_LONG).show();
+
+        if(words.length > 5)
+        {
+            return false;
+        }
+        String prunedNumber = pruneNumber(s2);
+
+        if(!tensTest(prunedNumber)){
+            return false;
+        }
+
+        if(!teensTest(prunedNumber)){
+            return false;
+        }
+
+        if(!onesTest(prunedNumber)){
+            return false;
+        }
+
+        if(!invalidityOfTens(prunedNumber)){
+            return false;
+        }
+
+        Log.e("number validitycheck","it's here");
+
+
+        return true;
+    }
+
+    private boolean onesTest(String prunedNumber) {
+        int count = 0;
+        for(String s: digits){
+            if(prunedNumber.contains(s)){
+                count++;
+            }
+        }
+        if(count > 1)
+            return false;
+        else
+            return true;
+    }
+
+    private boolean invalidityOfTens(String prunedNumber) {
+        boolean flag = false;
+        boolean answer = true;
+        for(String s: tens){
+            if(prunedNumber.contains(s)){
+                flag = true;
+            }
+        }
+        if(flag){
+            for(String s: teens){
+                if(prunedNumber.contains(s)){
+                    answer = false;
+                }
+            }
+        }
+
+        return answer;
+    }
+
+    private boolean teensTest(String prunedNumber) {
+        int count = 0;
+        for(String s: teens){
+            if(prunedNumber.contains(s)){
+                count++;
+            }
+        }
+        if(count > 1)
+            return false;
+        else
+            return true;
+    }
+
+    private boolean tensTest(String prunedNumber) {
+        int count = 0;
+        for(String s: tens){
+            if(prunedNumber.contains(s)){
+                count++;
+            }
+        }
+        if(count > 1)
+            return false;
+        else
+            return true;
     }
 
     private void updateChart3(int yVal) {
@@ -618,6 +698,13 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         return result;
     }
 
+    private String pruneNumber(String string){
+        String str1, str2;
+        str1 = string.replaceAll("one hundred and", "");
+        str2 = str1.replaceAll("two hundred and", "");
+
+        return str2.trim();
+    }
     private int convertWordsToNum(String s) {
 
         String[] words = s.split("\\s");
@@ -870,7 +957,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         if (searchName.equals(KWS_SEARCH))
             recognizer.startListening(searchName);
         else
-            recognizer.startListening(searchName, 20000);
+            recognizer.startListening(searchName, 10000);
 
     }
 
