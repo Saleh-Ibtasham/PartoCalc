@@ -27,6 +27,7 @@ import android.widget.Button;
 import android.widget.ScrollView;
 import android.widget.Toast;
 
+import com.evrencoskun.tableview.TableView;
 import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.charts.Chart;
 import com.github.mikephil.charting.charts.LineChart;
@@ -53,6 +54,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import edu.cmu.pocketsphinx.Assets;
 import edu.cmu.pocketsphinx.Hypothesis;
@@ -83,6 +86,10 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 
     private LineChart fetalGraph, cervicalGraph, maternalGraph;
     private BarChart contractionGraph;
+    private TableView liquor;
+
+//    private List<RowHeader> liquorRowHeaderList;
+//    private List<>;
 
     private LineDataSet fetalDataSet = new LineDataSet(null,null);
     private LineDataSet cervicalDataSet = new LineDataSet(null,null);
@@ -115,7 +122,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 
     private String[] tens = {"twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"};
     private String[] hundreds = {"hundred"};
-    private String[] digits = {"and", "zero", "one", "two", "three", "four", "five", "six",
+    private String[] digits = {"zero", "one", "two", "three", "four", "five", "six",
             "seven", "eight", "nine", "ten"};
     private String[] teens = {"eleven", "twelve", "thirteen", "fourteen", "fifteen",
             "sixteen", "seventeen", "eighteen", "nineteen"};
@@ -297,14 +304,14 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         fetalDataSet1 = new LineDataSet(null,null);
         fetalDataSet2 = new LineDataSet(null,null);
 
-        fetalDataSet1.addEntry(new Entry(0,100));
-        fetalDataSet1.addEntry(new Entry(24,100));
+        fetalDataSet1.addEntry(new Entry(0,120));
+        fetalDataSet1.addEntry(new Entry(24,120));
         fetalDataSet1.setColor(Color.GRAY);
         fetalDataSet1.setLineWidth(5);
         fetalDataSet1.setLabel("lower-limit");
 
-        fetalDataSet2.addEntry(new Entry(0,180));
-        fetalDataSet2.addEntry(new Entry(24,180));
+        fetalDataSet2.addEntry(new Entry(0,160));
+        fetalDataSet2.addEntry(new Entry(24,160));
         fetalDataSet2.setColor(Color.GRAY);
         fetalDataSet2.setLineWidth(5);
         fetalDataSet2.setLabel("upper-limit");
@@ -559,41 +566,67 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 
         Toast.makeText(getApplicationContext(), "input here", Toast.LENGTH_LONG).show();
 
-        if(words.length > 5)
+        if(s2.equals("")){
+            return false;
+        }
+        if(words.length > 4)
         {
             return false;
         }
         String prunedNumber = pruneNumber(s2);
 
         if(!tensTest(prunedNumber)){
+            Log.d("tensTest", "invalid");
             return false;
         }
 
         if(!teensTest(prunedNumber)){
+            Log.d("teensTest", "invalid");
             return false;
         }
 
         if(!onesTest(prunedNumber)){
+            Log.d("onesTest", "invalid");
             return false;
         }
 
         if(!invalidityOfTens(prunedNumber)){
+            Log.d("invalidity of Tens", "invalid");
             return false;
         }
 
-        Log.e("number validitycheck","it's here");
-
+        if(!invalidityOfTeens(prunedNumber)){
+            Log.d("invalidity of Teens", "invalid");
+            return false;
+        }
 
         return true;
+    }
+
+    private boolean invalidityOfTeens(String prunedNumber) {
+        boolean answer = true;
+        for(String s: teens){
+            if(prunedNumber.contains(s)){
+                for(String string: digits){
+                    if(prunedNumber.contains(string)){
+                        answer = false;
+                    }
+                }
+            }
+        }
+        return answer;
     }
 
     private boolean onesTest(String prunedNumber) {
         int count = 0;
         for(String s: digits){
-            if(prunedNumber.contains(s)){
+            Pattern p = Pattern.compile("\\b"+s+"\\b");
+            Matcher m = p.matcher(prunedNumber);
+            while (m.find()) {
                 count++;
             }
         }
+
         if(count > 1)
             return false;
         else
@@ -601,17 +634,13 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
     }
 
     private boolean invalidityOfTens(String prunedNumber) {
-        boolean flag = false;
         boolean answer = true;
         for(String s: tens){
             if(prunedNumber.contains(s)){
-                flag = true;
-            }
-        }
-        if(flag){
-            for(String s: teens){
-                if(prunedNumber.contains(s)){
-                    answer = false;
+                for(String string: teens){
+                    if(prunedNumber.contains(string)){
+                        answer = false;
+                    }
                 }
             }
         }
@@ -622,7 +651,9 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
     private boolean teensTest(String prunedNumber) {
         int count = 0;
         for(String s: teens){
-            if(prunedNumber.contains(s)){
+            Pattern p = Pattern.compile("\\b"+s+"\\b");
+            Matcher m = p.matcher(prunedNumber);
+            while (m.find()) {
                 count++;
             }
         }
@@ -635,7 +666,9 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
     private boolean tensTest(String prunedNumber) {
         int count = 0;
         for(String s: tens){
-            if(prunedNumber.contains(s)){
+            Pattern p = Pattern.compile("\\b"+s+"\\b");
+            Matcher m = p.matcher(prunedNumber);
+            while (m.find()) {
                 count++;
             }
         }
@@ -651,6 +684,11 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         if(contractionPointsAdded == false)
         {
             contractionHelper.deleteAll();
+        }
+
+        if((yVal < 2) || (yVal > 5)){
+            Toast.makeText(getApplicationContext(),"Input out of Contraction range", Toast.LENGTH_LONG).show();
+            return;
         }
 
         contractionHelper.insertData(contractionX, yVal);
@@ -687,9 +725,9 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
     }
 
     private String getNumber(String hypstr) {
-        String ans = null;
+        String ans = hypstr;
         for(String s : commands){
-            ans = hypstr.replace(s,"");
+            ans = ans.replace(s,"");
         }
         for(String s : charts){
             ans = ans.replace(s,"");
@@ -700,8 +738,8 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 
     private String pruneNumber(String string){
         String str1, str2;
-        str1 = string.replaceAll("one hundred and", "");
-        str2 = str1.replaceAll("two hundred and", "");
+        str1 = string.replace("one hundred", "");
+        str2 = str1.replace("two hundred", "");
 
         return str2.trim();
     }
@@ -803,6 +841,11 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
             fetalHelper.deleteAll();
         }
 
+        if((yVal < 80) || (yVal > 200)){
+            Toast.makeText(getApplicationContext(),"Input out of Fetal heart rate range", Toast.LENGTH_LONG).show();
+            return;
+        }
+
         fetalHelper.insertData(fetalX, yVal);
 
         fetalDataSet.clear();
@@ -833,6 +876,10 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
             cervicalHelper.deleteAll();
         }
 
+        if((yVal < 0) || (yVal > 10)){
+            Toast.makeText(getApplicationContext(),"Input out of cervical dialation range", Toast.LENGTH_LONG).show();
+            return;
+        }
         cervicalHelper.insertData(cervicalX, yVal);
 
         cervicalDataSet.clear();
@@ -861,6 +908,11 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         if(maternalPointsAdded == false)
         {
             maternalHelper.deleteAll();
+        }
+
+        if((yVal < 60) || (yVal > 180)){
+            Toast.makeText(getApplicationContext(),"Input out of Patient heart rate range", Toast.LENGTH_LONG).show();
+            return;
         }
 
         maternalHelper.insertData(maternalX, yVal);

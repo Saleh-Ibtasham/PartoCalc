@@ -121,8 +121,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         new Dashboard()).commit();
                 break;
             case R.id.nav_add:
-                Intent patientActivity = new Intent(MainActivity.this,PatientCreate.class);
-//                Intent patientActivity = new Intent(MainActivity.this,PartocalcActivity.class);
+//                Intent patientActivity = new Intent(MainActivity.this,PatientCreate.class);
+                Intent patientActivity = new Intent(MainActivity.this,PartocalcActivity.class);
                 startActivity(patientActivity);
                 overridePendingTransition(R.anim.slide_in_right,R.anim.slide_out_left);
             case R.id.nav_graphs:

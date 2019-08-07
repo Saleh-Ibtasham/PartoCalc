@@ -84,6 +84,7 @@
                     android:layout_width="0dp"
                     android:layout_height="477dp"
                     android:layout_marginTop="50dp"
+                    android:layout_marginBottom="50dp"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
@@ -91,7 +92,16 @@
 
                 </com.github.mikephil.charting.charts.LineChart>
 
-
+                <com.evrencoskun.tableview.TableView
+                    android:id="@+id/liquor"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_marginTop="50dp"
+                    android:layout_marginBottom="50dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/maternal_graph" />
             </android.support.constraint.ConstraintLayout>
         </ScrollView>
 

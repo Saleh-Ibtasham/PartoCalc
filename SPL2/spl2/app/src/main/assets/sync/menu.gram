@@ -14,8 +14,8 @@ public <menu> = <option> <graph> <tens>* <digits>*;
          seventy  |
          eighty  |
          ninety  |
-         one hundred and |
-         two hundred and ;
+         one hundred |
+         two hundred ;
 
 <digits> = zero  |
           one   |
