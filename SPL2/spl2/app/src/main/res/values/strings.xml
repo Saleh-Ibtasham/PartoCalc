@@ -18,4 +18,6 @@
         <item>Nurse</item>
         <item>Doctor</item>
     </string-array>
+
+    <string name="text">Medicines</string>
 </resources>

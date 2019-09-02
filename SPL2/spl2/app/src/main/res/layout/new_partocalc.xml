@@ -36,7 +36,9 @@
         <ScrollView
             android:id="@+id/contents"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            tools:layout_editor_absoluteX="0dp"
+            tools:layout_editor_absoluteY="-59dp">
 
             <android.support.constraint.ConstraintLayout
                 android:id="@+id/linearLayout"
@@ -48,60 +50,313 @@
                     android:layout_width="0dp"
                     android:layout_height="477dp"
                     android:layout_marginTop="50dp"
-                    app:layout_constraintBottom_toTopOf="@+id/cervical_graph"
+                    app:layout_constraintBottom_toTopOf="@+id/fluid_container"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintHorizontal_bias="0.0"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"></com.github.mikephil.charting.charts.LineChart>
+                    app:layout_constraintTop_toTopOf="parent">
+
+                </com.github.mikephil.charting.charts.LineChart>
+
+                <RelativeLayout
+                    android:id="@+id/fluid_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="25dp"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginEnd="5dp"
+                    android:layout_marginBottom="10dp"
+                    app:layout_constraintBottom_toTopOf="@+id/cervical_graph"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/fetal_graph">
+
+                    <TableLayout
+                        android:id="@+id/fluid"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_marginTop="50dp"
+                        android:layout_marginBottom="50dp" />
+                </RelativeLayout>
+
+                <TextView
+                    android:id="@+id/fluid_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="2dp"
+                    android:layout_marginTop="40dp"
+                    android:layout_marginEnd="2dp"
+                    android:text="Fluid"
+                    android:textSize="10sp"
+                    app:layout_constraintEnd_toStartOf="@+id/fluid_container"
+                    app:layout_constraintHorizontal_bias="0.0"
+                    app:layout_constraintStart_toStartOf="@+id/linearLayout"
+                    app:layout_constraintTop_toBottomOf="@+id/fetal_graph" />
+
+                <TextView
+                    android:id="@+id/Moulding_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="68dp"
+                    android:text="Moulding"
+                    android:textSize="6sp"
+                    app:layout_constraintEnd_toStartOf="@+id/fluid_container"
+                    app:layout_constraintHorizontal_bias="0.0"
+                    app:layout_constraintStart_toStartOf="@+id/linearLayout"
+                    app:layout_constraintTop_toBottomOf="@+id/fetal_graph" />
 
                 <com.github.mikephil.charting.charts.LineChart
                     android:id="@+id/cervical_graph"
                     android:layout_width="0dp"
                     android:layout_height="477dp"
-                    android:layout_marginTop="50dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginBottom="5dp"
+                    app:layout_constraintBottom_toTopOf="@+id/time_container"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintHorizontal_bias="1.0"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/fluid_container">
+
+                </com.github.mikephil.charting.charts.LineChart>
+
+                <RelativeLayout
+                    android:id="@+id/time_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="20dp"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginEnd="5dp"
+                    android:layout_marginBottom="10dp"
                     app:layout_constraintBottom_toTopOf="@+id/contraction_graph"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/fetal_graph">
+                    app:layout_constraintTop_toBottomOf="@id/cervical_graph">
 
-                </com.github.mikephil.charting.charts.LineChart>
+                    <TableLayout
+                        android:id="@+id/time"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_marginTop="50dp"
+                        android:layout_marginBottom="50dp" />
+                </RelativeLayout>
 
                 <com.github.mikephil.charting.charts.BarChart
                     android:id="@+id/contraction_graph"
                     android:layout_width="0dp"
                     android:layout_height="477dp"
-                    android:layout_marginTop="50dp"
-                    app:layout_constraintBottom_toTopOf="@+id/maternal_graph"
+                    android:layout_marginTop="10dp"
+                    app:layout_constraintBottom_toTopOf="@id/oxytocin_container"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintHorizontal_bias="0.498"
+                    app:layout_constraintHorizontal_bias="0.0"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/cervical_graph">
+                    app:layout_constraintTop_toBottomOf="@+id/time_container">
 
                 </com.github.mikephil.charting.charts.BarChart>
+
+                <RelativeLayout
+                    android:id="@+id/oxytocin_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="15dp"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginEnd="5dp"
+                    app:layout_constraintBottom_toTopOf="@id/medicine_layout_container"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/contraction_graph">
+
+                    <TableLayout
+                        android:id="@+id/oxytocin"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_marginTop="50dp"
+                        android:layout_marginBottom="50dp" />
+
+                </RelativeLayout>
+
+                <RelativeLayout
+                    android:id="@+id/medicine_layout_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    app:layout_constraintBottom_toTopOf="@+id/maternal_graph"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintHorizontal_bias="1.0"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/oxytocin_container">
+
+                    <LinearLayout
+                        android:id="@+id/medicine_container"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="80dp"
+                        android:layout_marginTop="0dp"
+                        android:layout_marginEnd="0dp"
+                        android:layout_marginBottom="0dp"
+                        android:orientation="vertical">
+
+                        <TableLayout
+                            android:id="@+id/medicine"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:layout_marginTop="50dp"
+                            android:layout_marginBottom="50dp" />
+
+                    </LinearLayout>
+
+                </RelativeLayout>
 
                 <com.github.mikephil.charting.charts.LineChart
                     android:id="@+id/maternal_graph"
                     android:layout_width="0dp"
                     android:layout_height="477dp"
-                    android:layout_marginTop="50dp"
-                    android:layout_marginBottom="50dp"
-                    app:layout_constraintBottom_toBottomOf="parent"
+                    android:layout_marginBottom="10dp"
+                    app:layout_constraintBottom_toTopOf="@id/temp_container"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/contraction_graph">
+                    app:layout_constraintTop_toBottomOf="@id/medicine_layout_container">
 
                 </com.github.mikephil.charting.charts.LineChart>
 
-                <com.evrencoskun.tableview.TableView
-                    android:id="@+id/liquor"
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_marginTop="50dp"
-                    android:layout_marginBottom="50dp"
+                <RelativeLayout
+                    android:id="@+id/temp_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="25dp"
+                    android:layout_marginEnd="5dp"
+                    app:layout_constraintBottom_toTopOf="@id/urine_container"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/maternal_graph">
+
+                    <TableLayout
+                        android:id="@+id/temperature"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_marginTop="50dp"
+                        android:layout_marginBottom="50dp" />
+
+                </RelativeLayout>
+
+                <RelativeLayout
+                    android:id="@+id/urine_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="25dp"
+                    android:layout_marginTop="5dp"
+                    android:layout_marginEnd="5dp"
+                    android:layout_marginBottom="10dp"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/maternal_graph" />
+                    app:layout_constraintTop_toBottomOf="@id/temp_container">
+
+                    <TableLayout
+                        android:id="@+id/urine"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_marginTop="50dp"
+                        android:layout_marginBottom="50dp" />
+                </RelativeLayout>
+
+                <TextView
+                    android:id="@+id/textView2"
+                    android:layout_width="21dp"
+                    android:layout_height="12dp"
+                    android:layout_marginTop="40dp"
+                    android:text="Hour"
+                    android:textSize="9sp"
+                    app:layout_constraintEnd_toStartOf="@+id/time_container"
+                    app:layout_constraintTop_toBottomOf="@+id/cervical_graph" />
+
+                <TextView
+                    android:id="@+id/textView3"
+                    android:layout_width="21dp"
+                    android:layout_height="14dp"
+                    android:layout_marginTop="84dp"
+                    android:text="Time"
+                    android:textSize="9sp"
+                    app:layout_constraintEnd_toStartOf="@+id/time_container"
+                    app:layout_constraintTop_toBottomOf="@+id/cervical_graph" />
+
+                <TextView
+                    android:id="@+id/textView4"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginEnd="780dp"
+                    android:rotation="0"
+                    android:text="Oxytocin"
+                    android:textSize="6sp"
+                    app:layout_constraintEnd_toEndOf="@+id/contraction_graph"
+                    app:layout_constraintTop_toBottomOf="@+id/contraction_graph" />
+
+                <TextView
+                    android:id="@+id/textView5"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="88dp"
+                    android:layout_marginEnd="776dp"
+                    android:rotation="-90"
+                    android:text="Drops"
+                    android:textSize="8sp"
+                    app:layout_constraintEnd_toEndOf="@+id/oxytocin_container"
+                    app:layout_constraintTop_toBottomOf="@+id/contraction_graph" />
+
+                <TextView
+                    android:id="@+id/textView6"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="44dp"
+                    android:layout_marginEnd="772dp"
+                    android:rotation="-90"
+                    android:text="Amount"
+                    android:textSize="8sp"
+                    app:layout_constraintEnd_toEndOf="@+id/oxytocin_container"
+                    app:layout_constraintTop_toBottomOf="@+id/contraction_graph" />
+
+                <TextView
+                    android:id="@+id/textView7"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="52dp"
+                    android:layout_marginEnd="772dp"
+                    android:rotation="-90"
+                    android:text="Medicines"
+                    android:textSize="8sp"
+                    app:layout_constraintEnd_toEndOf="@+id/medicine_layout_container"
+                    app:layout_constraintTop_toBottomOf="@+id/oxytocin_container" />
+
+                <TextView
+                    android:id="@+id/textView8"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="52dp"
+                    android:layout_marginEnd="756dp"
+                    android:rotation="-90"
+                    android:text="Temperature"
+                    android:textSize="8sp"
+                    app:layout_constraintEnd_toEndOf="@+id/temp_container"
+                    app:layout_constraintTop_toTopOf="@+id/temp_container" />
+
+                <TextView
+                    android:id="@+id/textView9"
+                    android:layout_width="23dp"
+                    android:layout_height="14dp"
+                    android:layout_marginTop="36dp"
+                    android:layout_marginEnd="768dp"
+                    android:text="Urine"
+                    android:textSize="8sp"
+                    app:layout_constraintEnd_toEndOf="@+id/urine_container"
+                    app:layout_constraintTop_toTopOf="@+id/urine_container" />
+
+
+                <!--<com.example.myapplication.VerticalText-->
+                <!--style="@style/verticalTextStyle"-->
+                <!--android:layout_width="match_parent"-->
+                <!--android:layout_height="match_parent"-->
+                <!--android:orientation="vertical"-->
+                <!--/>-->
+
             </android.support.constraint.ConstraintLayout>
         </ScrollView>
 

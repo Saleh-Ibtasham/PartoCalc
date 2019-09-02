@@ -10,6 +10,8 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
+import android.graphics.Point;
+import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.speech.tts.TextToSpeech;
@@ -19,15 +21,28 @@ import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.AppCompatEditText;
 import android.support.v7.widget.Toolbar;
+import android.util.AttributeSet;
 import android.util.Log;
+import android.util.Xml;
+import android.view.Display;
+import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.ScrollView;
+import android.widget.Space;
+import android.widget.TableLayout;
+import android.widget.TableRow;
+import android.widget.TextView;
 import android.widget.Toast;
 
-import com.evrencoskun.tableview.TableView;
 import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.charts.Chart;
 import com.github.mikephil.charting.charts.LineChart;
@@ -39,6 +54,7 @@ import com.github.mikephil.charting.data.BarEntry;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
@@ -47,8 +63,13 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.vikramezhil.droidspeech.DroidSpeech;
 import com.vikramezhil.droidspeech.OnDSListener;
 
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException;
+import org.xmlpull.v1.XmlPullParserFactory;
+
 import java.io.File;
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -68,6 +89,9 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 
     private static final int MY_PERMISSIONS_REQUEST_RECORD_AUDIO = 1;
 
+    private int SCREEN_HEIGHT;
+    private int SCREEN_WIDTH;
+
     private SectionsPageAdapter mSectionsPageAdapter;
     private DroidSpeech droidSpeech;
     private OnDSListener onDSListener;
@@ -82,26 +106,34 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 
     private static final String KWS_SEARCH = "wakeup";
     private static final String MENU_SEARCH = "menu";
-    private static final String KEYPHRASE = "hey wakeup";
+    private static final String KEYPHRASE = "hey start";
 
     private LineChart fetalGraph, cervicalGraph, maternalGraph;
     private BarChart contractionGraph;
-    private TableView liquor;
+    private TableLayout fluid,time,oxytocin,medicine,temperature,urine;
+
+    private int tableColumnCount;
 
 //    private List<RowHeader> liquorRowHeaderList;
 //    private List<>;
 
     private LineDataSet fetalDataSet = new LineDataSet(null,null);
-    private LineDataSet cervicalDataSet = new LineDataSet(null,null);
+    private LineDataSet cervicalDataSet = new LineDataSet(null,"cervical");
+    private LineDataSet descendDataSet = new LineDataSet(null,"head descend");
     private BarDataSet contractionDataSet;
     private LineDataSet maternalDataSet = new LineDataSet(null,null);
 
+    private ArrayList<ILineDataSet> cervicalDataSets = new ArrayList<>();
+    private ArrayList<Entry> cervicalList = new ArrayList<>();
+    private ArrayList<Entry> descendList = new ArrayList<>();
+
     private LineDataSet fetalDataSet1,fetalDataSet2,cervicalDataSet1,cervicalDataSet2;
 
-    private LineData fetalData, cervicalData, maternalData;
+    private LineData fetalData, cervicalData, maternalData, descendData;
     private BarData contractionData;
 
-    private int fetalX = 0, fetalY, cervicalX = 0, cervicalY, contractionX = 0, contractionY, maternalX = 0, maternalY;
+    private int fetalX = 0, fetalY, cervicalX = 0, cervicalY, contractionX = 0, contractionY, maternalX = 0, maternalY, descendX = 0;
+    private int fluidX=0, mouldingX=0, oxyAmX = 0, oxyDrX = 0, tempX=0;
 
 
     private static final int PERMISSIONS_REQUEST_RECORD_AUDIO = 1;
@@ -112,11 +144,13 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 
     private SpeechRecognizer speechRecognizer;
 
-    MyHelper fetalHelper,cervicalHelper,contractionHelper,maternalHelper;
-    SQLiteDatabase fetalDB, cervicalDB, contractionDB, maternalDB;
+    private MediaPlayer okSound, invalidSound;
 
-    private boolean fetalPointsAdded = false , cervicalPointsAdded = false, contractionPointsAdded = false, maternalPointsAdded = false;
-    private String[] charts = {"fetal", "cervical", "contraction", "maternal"};
+    MyHelper fetalHelper,cervicalHelper,contractionHelper,maternalHelper,descendHelper;
+    SQLiteDatabase fetalDB, cervicalDB, contractionDB, maternalDB, descendDB;
+
+    private boolean fetalPointsAdded = false , cervicalPointsAdded = false, contractionPointsAdded = false, maternalPointsAdded = false, descendPointAdded = false;
+    private String[] charts = {"fetal", "cervical", "contraction", "maternal", "head descend","fluid count","moulding","oxytocin amount", "oxytocin drops","temperature"};
     private String[] commands = {"insert", "delete"};
     private HashMap<String,Chart> chartHashMap;
 
@@ -132,6 +166,11 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
     private BluetoothProfile.ServiceListener profileListener;
 
     private BluetoothDevice btDevice;
+
+    private RelativeLayout fluidLayout,timeLayout,oxytocinLayout,tempLayout,urineLayout;
+    private LinearLayout medicineLayout;
+
+    private TableRow tableRow, fluidRow;
 
 
     @Override
@@ -159,14 +198,27 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 
         scrollView = findViewById(R.id.contents);
 
+        fluidLayout = findViewById(R.id.fluid_container);
+        timeLayout = findViewById(R.id.time_container);
+        oxytocinLayout = findViewById(R.id.oxytocin_container);
+        medicineLayout = findViewById(R.id.medicine_container);
+        tempLayout = findViewById(R.id.temp_container);
+        urineLayout = findViewById(R.id.urine_container);
+
         setupBluetooth();
+
+        getScreenDimension();
 
         createFetal();
         createCervical();
         createContraction();
         createMaternal();
+        craeteTables();
         createGraphMaps();
+        clearDatabase();
 
+        okSound = MediaPlayer.create(getApplicationContext(),R.raw.definite);
+        invalidSound = MediaPlayer.create(getApplicationContext(), R.raw.case_closed);
 //        initializeTextToSpeech();
         runRecognizerSetup();
 
@@ -237,6 +289,316 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 //                openSpeechRecog();
 //            }
 //        });
+    }
+
+    private void getScreenDimension() {
+
+        WindowManager wm= (WindowManager) getApplicationContext().getSystemService(Context.WINDOW_SERVICE);
+        Display display = wm.getDefaultDisplay();
+        Point size = new Point();
+        display.getSize(size);
+        SCREEN_WIDTH= size.x;
+        SCREEN_HEIGHT = size.y;
+
+        Log.i("screent width", "getScreenDimension: " + SCREEN_WIDTH + " " + SCREEN_HEIGHT);
+    }
+
+    private void craeteTables() {
+
+        createFluid();
+        createTime();
+        createOxytocin();
+        createMedicine();
+        createTemp();
+        createUrine();
+//        tableRow = (TableRow) fluid.getChildAt(1);
+//        for(int i=0; i< tableRow.getChildCount();i++){
+//            TableRow temp = (TableRow) tableRow.getChildAt(i);
+//            TextView tempText = (TextView) temp.getChildAt(0);
+//            tempText.setText("M");
+//        }
+//        Space space = new Space(getApplicationContext());
+//        space.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,100));
+    }
+
+    private void createFluid() {
+        fluid = new TableLayout(getApplicationContext());
+        fluid.setPadding(0, 0 ,0 ,0);
+        fluid.setLayoutParams(new TableLayout.LayoutParams(fluidLayout.getWidth(), SCREEN_HEIGHT/10));
+
+        fluidLayout.addView(fluid);
+
+        for(int i=0; i< 2; i++){
+            initializeFluid(i);
+        }
+
+        for(int i=0; i<2; i++){
+            for(int j=0; j<24; j++){
+                addColumnsToFluid(i);
+            }
+        }
+    }
+
+    private synchronized void initializeFluid(int pos) {
+        TableRow fluidRow= new TableRow(getApplicationContext());
+        fluidRow.setPadding(0,0,0,0);
+        fluidRow.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, SCREEN_HEIGHT/20));
+        this.fluid.addView(fluidRow,pos);
+    }
+
+    private synchronized void addColumnsToFluid(int id) {
+        TableRow tableAdd = (TableRow) fluid.getChildAt(id);
+        tableRow= new TableRow(getApplicationContext());
+        Log.i("Fluid", "Fluid Width: " + fluid.getWidth());
+        TableRow.LayoutParams layoutParamsTableRow= new TableRow.LayoutParams(30, SCREEN_HEIGHT/22);
+        tableRow.setPadding(3,3,3,3);
+        tableRow.setBackground(getDrawable(R.drawable.cell_bacground));
+        tableRow.setLayoutParams(layoutParamsTableRow);
+        TextView label_date = new TextView(getApplicationContext());
+        label_date.setText("");
+        label_date.setTextSize(getResources().getDimension(R.dimen.cell_text_size));
+        this.tableRow.addView(label_date);
+        this.tableRow.setTag("yolo");
+        tableAdd.addView(tableRow);
+        tableColumnCount++;
+    }
+
+    private void createTime(){
+        time = new TableLayout(getApplicationContext());
+        time.setPadding(0, 0 ,0 ,0);
+        time.setLayoutParams(new TableLayout.LayoutParams(timeLayout.getWidth(), SCREEN_HEIGHT/6));
+
+        timeLayout.addView(time);
+
+        for(int i=0; i< 2; i++){
+            initializeTime(i);
+        }
+
+        for(int i=0; i<2; i++){
+            for(int j=0; j<12; j++){
+                addColumnsToTime(i);
+            }
+        }
+    }
+
+    private void addColumnsToTime(int id) {
+        TableRow tableAdd = (TableRow) time.getChildAt(id);
+        tableRow= new TableRow(getApplicationContext());
+        TableRow.LayoutParams layoutParamsTableRow;
+        if(id == 0)
+        {
+            layoutParamsTableRow= new TableRow.LayoutParams(62, SCREEN_HEIGHT/18);
+        }
+        else{
+            layoutParamsTableRow= new TableRow.LayoutParams(62, SCREEN_HEIGHT/12);
+        }
+
+        tableRow.setPadding(3,3,3,3);
+        tableRow.setBackground(getDrawable(R.drawable.cell_bacground));
+        tableRow.setLayoutParams(layoutParamsTableRow);
+        TextView label_date = new TextView(getApplicationContext());
+        label_date.setText("10:30");
+        label_date.setTextSize(10);
+        this.tableRow.addView(label_date);
+        this.tableRow.setTag("yolo");
+        tableAdd.addView(tableRow);
+    }
+
+    private void initializeTime(int pos) {
+        TableRow timeRow = new TableRow(getApplicationContext());
+        timeRow.setPadding(0,0,0,0);
+        timeRow.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, SCREEN_HEIGHT/10));
+        this.time.addView(timeRow,pos);
+    }
+
+    private void createOxytocin(){
+        oxytocin = new TableLayout(getApplicationContext());
+        oxytocin.setPadding(0, 0 ,0 ,0);
+        oxytocin.setLayoutParams(new TableLayout.LayoutParams(oxytocinLayout.getWidth(), SCREEN_HEIGHT/10));
+
+        oxytocinLayout.addView(oxytocin);
+
+        for(int i=0; i< 2; i++){
+            initializeOxytocin(i);
+        }
+
+        for(int i=0; i<2; i++){
+            for(int j=0; j<24; j++){
+                addColumnsToOxytocin(i);
+            }
+        }
+    }
+
+    private void addColumnsToOxytocin(int id) {
+        TableRow tableAdd = (TableRow) oxytocin.getChildAt(id);
+        tableRow= new TableRow(getApplicationContext());
+        TableRow.LayoutParams layoutParamsTableRow;
+        layoutParamsTableRow= new TableRow.LayoutParams(31, SCREEN_HEIGHT/20);
+        tableRow.setPadding(3,3,3,3);
+        tableRow.setBackground(getDrawable(R.drawable.cell_bacground));
+        tableRow.setLayoutParams(layoutParamsTableRow);
+        TextView label_date = new TextView(getApplicationContext());
+        label_date.setText("");
+        label_date.setTextSize(10);
+        this.tableRow.addView(label_date);
+        this.tableRow.setTag("yolo");
+        tableAdd.addView(tableRow);
+    }
+
+
+    private void initializeOxytocin(int pos) {
+        TableRow oxytocinRow = new TableRow(getApplicationContext());
+        oxytocinRow.setPadding(0,0,0,0);
+        oxytocinRow.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, SCREEN_HEIGHT/10));
+        this.oxytocin.addView(oxytocinRow,pos);
+    }
+
+    private void createMedicine(){
+
+        for(int j=0; j<12; j++){
+            addColumnsToMedicine(0);
+        }
+
+//        medicineLayout.setPivotX(medicineLayout.getWidth());
+//        medicineLayout.setPivotY(medicineLayout.getHeight());
+        medicineLayout.setRotation(-90);
+
+    }
+
+    private void addColumnsToMedicine(int id) {
+//        TableRow tableAdd = (TableRow) medicine.getChildAt(id);
+//        tableRow= new TableRow(getApplicationContext());
+//        TableRow.LayoutParams layoutParamsTableRow;
+//        layoutParamsTableRow= new TableRow.LayoutParams(60, SCREEN_HEIGHT/5);
+//        tableRow.setPadding(3,3,3,3);
+//        tableRow.setBackground(getDrawable(R.drawable.cell_bacground));
+//        tableRow.setLayoutParams(layoutParamsTableRow);
+
+
+//        String str = "<attribute xmlns:android=\"http://schemas.android.com/apk/res/android\" " +
+//                "android:layout_width=\"match_parent\" android:layout_height=\"match_parent\"" +
+//                "\" android:orientation = \"vertical\" "+
+//                "\" android:text = \"hello\" "+ "\"/>";
+//
+//        AttributeSet attributeSet = null;
+//
+//        XmlPullParserFactory factory;
+//        try {
+//            factory = XmlPullParserFactory.newInstance();
+//            factory.setNamespaceAware(true);
+//            XmlPullParser parser = factory.newPullParser();
+//            parser.setInput(new StringReader(str));
+//            parser.next();
+//            attributeSet = Xml.asAttributeSet(parser);
+//            int x = attributeSet.getAttributeCount();
+//            Log.i("Attributes", "addColumnsToMedicine: " + x);
+//        } catch (XmlPullParserException e) {
+//            e.printStackTrace();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+
+        EditText label_date = new EditText(getApplicationContext());
+        label_date.setTextSize(getResources().getDimension(R.dimen.cell_text_size));
+        label_date.setWidth(SCREEN_HEIGHT/3);
+        label_date.setHeight(61);
+        label_date.setText("");
+        label_date.setPadding(10,0,0,0);
+        label_date.setBackground(getDrawable(R.drawable.cell_bacground));
+        medicineLayout.addView(label_date);
+    }
+
+//    private void initializeMedicine(int pos) {
+//        TableRow medicineRow = new TableRow(getApplicationContext());
+//        medicineRow.setPadding(0,0,0,0);
+//        medicineRow.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, SCREEN_HEIGHT/5));
+//        this.medicine.addView(medicineRow,pos);
+//    }
+
+    private void createTemp(){
+        temperature = new TableLayout(getApplicationContext());
+        temperature.setPadding(0, 0 ,0 ,0);
+        temperature.setLayoutParams(new TableLayout.LayoutParams(tempLayout.getWidth(), SCREEN_HEIGHT/20));
+
+        tempLayout.addView(temperature);
+
+        initializeTemperature(0);
+
+        for(int j=0; j<12; j++){
+            addColumnsToTemperature(0);
+        }
+    }
+
+    private void addColumnsToTemperature(int id) {
+        TableRow tableAdd = (TableRow) temperature.getChildAt(id);
+        tableRow= new TableRow(getApplicationContext());
+        TableRow.LayoutParams layoutParamsTableRow;
+        layoutParamsTableRow= new TableRow.LayoutParams(60, SCREEN_HEIGHT/20);
+        tableRow.setPadding(3,3,3,3);
+        tableRow.setBackground(getDrawable(R.drawable.cell_bacground));
+        tableRow.setLayoutParams(layoutParamsTableRow);
+        TextView label_date = new TextView(getApplicationContext());
+        label_date.setText("");
+        label_date.setTextSize(getResources().getDimension(R.dimen.cell_text_size));
+        this.tableRow.addView(label_date);
+        this.tableRow.setTag("yolo");
+        tableAdd.addView(tableRow);
+    }
+
+    private void initializeTemperature(int pos) {
+
+        TableRow tempRow = new TableRow(getApplicationContext());
+        tempRow.setPadding(0,0,0,0);
+        tempRow.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, SCREEN_HEIGHT/20));
+        this.temperature.addView(tempRow,pos);
+    }
+
+    private void createUrine(){
+        urine = new TableLayout(getApplicationContext());
+        urine.setPadding(0, 0 ,0 ,0);
+        urine.setLayoutParams(new TableLayout.LayoutParams(urineLayout.getWidth(), SCREEN_HEIGHT/5));
+
+        urineLayout.addView(urine);
+
+        for(int i=0; i< 3; i++){
+            initializeUrine(i);
+        }
+
+        for(int i=0; i<3; i++){
+            for(int j=0; j<12; j++){
+                addColumnsToUrine(i);
+            }
+        }
+    }
+
+    private void addColumnsToUrine(int id) {
+        TableRow tableAdd = (TableRow) urine.getChildAt(id);
+        tableRow= new TableRow(getApplicationContext());
+        TableRow.LayoutParams layoutParamsTableRow;
+        layoutParamsTableRow= new TableRow.LayoutParams(60, SCREEN_HEIGHT/20);
+        tableRow.setPadding(3,3,3,3);
+        tableRow.setBackground(getDrawable(R.drawable.cell_bacground));
+        tableRow.setLayoutParams(layoutParamsTableRow);
+        TextView label_date = new TextView(getApplicationContext());
+        label_date.setText("+++");
+        label_date.setTextSize(12);
+        this.tableRow.addView(label_date);
+        this.tableRow.setTag("yolo");
+        tableAdd.addView(tableRow);
+    }
+
+    private void initializeUrine(int pos) {
+        TableRow urineRow = new TableRow(getApplicationContext());
+        urineRow.setPadding(0,0,0,0);
+        urineRow.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, SCREEN_HEIGHT/20));
+        this.urine.addView(urineRow,pos);
+    }
+
+    private void clearDatabase() {
+        fetalHelper.deleteAll();
+        contractionHelper.deleteAll();
+        maternalHelper.deleteAll();
+        cervicalHelper.deleteAll();
     }
 
     private void setupBluetooth() {
@@ -350,6 +712,9 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         cervicalHelper = new MyHelper(getApplicationContext());
         cervicalDB = cervicalHelper.getWritableDatabase();
 
+        descendHelper = new MyHelper(getApplicationContext());
+        descendDB = descendHelper.getWritableDatabase();
+
         cervicalDataSet1 = new LineDataSet(null,null);
         cervicalDataSet2 = new LineDataSet(null,null);
 
@@ -365,9 +730,13 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         cervicalDataSet2.setLineWidth(5);
         cervicalDataSet2.setLabel("Action");
 
-        cervicalData = new LineData();
-        cervicalData.addDataSet(cervicalDataSet1);
-        cervicalData.addDataSet(cervicalDataSet2);
+        cervicalDataSets.add(cervicalDataSet1);
+        cervicalDataSets.add(cervicalDataSet2);
+
+        cervicalData = new LineData(cervicalDataSets);
+        descendData = new LineData();
+//        cervicalData.addDataSet(cervicalDataSet1);
+//        cervicalData.addDataSet(cervicalDataSet2);
 
         XAxis xAxis = cervicalGraph.getXAxis();
         YAxis yAxis = cervicalGraph.getAxisLeft();
@@ -535,30 +904,173 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
             if(hypothesis.getHypstr().contains("insert")){
                 String s = getChart(hypothesis.getHypstr());
                 String s2 = getNumber(hypothesis.getHypstr());
-                if(!checkNumberValidity(s2)){
-                    Toast.makeText(getApplicationContext(), "invalid input", Toast.LENGTH_LONG).show();
-                    return;
-                }
-                int yVal = convertWordsToNum(s2);
+
                 if(s.equals(charts[0])){
+                    if(!checkNumberValidity(s2)){
+                        Toast.makeText(getApplicationContext(), "invalid input", Toast.LENGTH_LONG).show();
+                        invalidSound.start();
+                        return;
+                    }
+                    int yVal = convertWordsToNum(s2);
                     updateChart1(yVal);
                     scrollView.smoothScrollTo(0, fetalGraph.getTop());
                 }
                 else if(s.equals(charts[1])){
-                    updateChart2(yVal);
+                    if(!checkNumberValidity(s2)){
+                        Toast.makeText(getApplicationContext(), "invalid input", Toast.LENGTH_LONG).show();
+                        invalidSound.start();
+                        return;
+                    }
+                    int yVal = convertWordsToNum(s2);
+                    updateChart2(yVal,1);
                     scrollView.smoothScrollTo(0, cervicalGraph.getTop());
                 }
                 else if(s.equals(charts[2])){
+                    if(!checkNumberValidity(s2)){
+                        Toast.makeText(getApplicationContext(), "invalid input", Toast.LENGTH_LONG).show();
+                        invalidSound.start();
+                        return;
+                    }
+                    int yVal = convertWordsToNum(s2);
                     updateChart3(yVal);
                     scrollView.smoothScrollTo(0, contractionGraph.getTop());
                 }
                 else if(s.equals(charts[3])){
+                    if(!checkNumberValidity(s2)){
+                        Toast.makeText(getApplicationContext(), "invalid input", Toast.LENGTH_LONG).show();
+                        invalidSound.start();
+                        return;
+                    }
+                    int yVal = convertWordsToNum(s2);
                     updateChart4(yVal);
                     scrollView.smoothScrollTo(0, maternalGraph.getTop());
                 }
-
+                else if(s.equals(charts[4])){
+                    if(!checkNumberValidity(s2)){
+                        Toast.makeText(getApplicationContext(), "invalid input", Toast.LENGTH_LONG).show();
+                        invalidSound.start();
+                        return;
+                    }
+                    int yVal = convertWordsToNum(s2);
+                    updateChart2(yVal,2);
+                    scrollView.smoothScrollTo(0, cervicalGraph.getTop());
+                }
+                else if(s.equals(charts[5])){
+                    updateChart5(s2);
+                    scrollView.smoothScrollTo(0,fluidLayout.getTop());
+                }
+                else if(s.equals(charts[6])){
+                    updateChart6(s2);
+                    scrollView.smoothScrollTo(0,fluidLayout.getTop());
+                }
+                else if(s.equals(charts[7])){
+                    if(!checkNumberValidity(s2)){
+                        Toast.makeText(getApplicationContext(), "invalid input", Toast.LENGTH_LONG).show();
+                        invalidSound.start();
+                        return;
+                    }
+                    int yVal = convertWordsToNum(s2);
+                    updateChart7(yVal);
+                    scrollView.smoothScrollTo(0,oxytocinLayout.getTop());
+                }
+                else if(s.equals(charts[8])){
+                    if(!checkNumberValidity(s2)){
+                        Toast.makeText(getApplicationContext(), "invalid input", Toast.LENGTH_LONG).show();
+                        invalidSound.start();
+                        return;
+                    }
+                    int yVal = convertWordsToNum(s2);
+                    updateChart8(yVal);
+                    scrollView.smoothScrollTo(0,oxytocinLayout.getTop());
+                }
+                else if(s.equals(charts[9])){
+                    if(!checkNumberValidity(s2)){
+                        Toast.makeText(getApplicationContext(), "invalid input", Toast.LENGTH_LONG).show();
+                        invalidSound.start();
+                        return;
+                    }
+                    int yVal = convertWordsToNum(s2);
+                    updateChart9(yVal);
+                    scrollView.smoothScrollTo(0,tempLayout.getTop());
+                }
             }
         }
+    }
+
+    private void updateChart9(int yVal) {
+        tableRow = (TableRow) temperature.getChildAt(0);
+
+        TableRow temp = (TableRow) tableRow.getChildAt(tempX);
+        TextView tempText = (TextView) temp.getChildAt(0);
+        tempText.setText(Integer.toString(yVal));
+
+        tempX++;
+        okSound.start();
+    }
+
+    private void updateChart8(int yVal) {
+        tableRow = (TableRow) oxytocin.getChildAt(1);
+
+        TableRow temp = (TableRow) tableRow.getChildAt(oxyDrX);
+        TextView tempText = (TextView) temp.getChildAt(0);
+        tempText.setText(Integer.toString(yVal  ));
+
+        oxyDrX++;
+        okSound.start();
+    }
+
+    private void updateChart7(int yVal) {
+        tableRow = (TableRow) oxytocin.getChildAt(0);
+
+        TableRow temp = (TableRow) tableRow.getChildAt(oxyAmX);
+        TextView tempText = (TextView) temp.getChildAt(0);
+        tempText.setText(Integer.toString(yVal));
+
+        oxyAmX++;
+        okSound.start();
+    }
+
+    private void updateChart6(String yVal) {
+        tableRow = (TableRow) fluid.getChildAt(1);
+
+        TableRow temp = (TableRow) tableRow.getChildAt(mouldingX);
+        TextView tempText = (TextView) temp.getChildAt(0);
+        String ans = null;
+        if(yVal.contains(digits[0])){
+            ans = "0";
+        }
+        else if(yVal.contains(digits[1]))
+        {
+            ans = "+";
+        }
+        else if(yVal.contains(digits[2]))
+        {
+            ans = "++";
+        }
+        else if(yVal.contains(digits[3]))
+        {
+            ans = "+++";
+        }
+        else{
+            invalidSound.start();
+            return;
+        }
+        tempText.setTextSize(8);
+        tempText.setText(ans);
+
+        mouldingX++;
+        okSound.start();
+    }
+
+    private void updateChart5(String yVal) {
+        tableRow = (TableRow) fluid.getChildAt(0);
+
+        TableRow temp = (TableRow) tableRow.getChildAt(fluidX);
+        TextView tempText = (TextView) temp.getChildAt(0);
+        tempText.setText(yVal.toUpperCase());
+
+        fluidX++;
+        okSound.start();
     }
 
     private boolean checkNumberValidity(String s2) {
@@ -688,6 +1200,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 
         if((yVal < 2) || (yVal > 5)){
             Toast.makeText(getApplicationContext(),"Input out of Contraction range", Toast.LENGTH_LONG).show();
+            invalidSound.start();
             return;
         }
 
@@ -708,6 +1221,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         contractionPointsAdded = true;
 
         contractionX += 4;
+        okSound.start();
     }
 
     private List<BarEntry> getBarData() {
@@ -843,6 +1357,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 
         if((yVal < 80) || (yVal > 200)){
             Toast.makeText(getApplicationContext(),"Input out of Fetal heart rate range", Toast.LENGTH_LONG).show();
+            invalidSound.start();
             return;
         }
 
@@ -866,40 +1381,95 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         fetalPointsAdded = true;
 
         fetalX += 4;
+        okSound.start();
     }
 
-    private void updateChart2(int yVal){
-        cervicalData.removeDataSet(cervicalDataSet);
+    private void updateChart2(int yVal, int x){
+        if(x == 1){
+            cervicalData.removeDataSet(cervicalDataSet);
 
-        if(cervicalPointsAdded == false)
-        {
-            cervicalHelper.deleteAll();
+            if(cervicalPointsAdded == false)
+            {
+                cervicalHelper.deleteAll();
+            }
+
+            if((yVal < 0) || (yVal > 10)){
+                Toast.makeText(getApplicationContext(),"Input out of cervical dialation range", Toast.LENGTH_LONG).show();
+                invalidSound.start();
+                return;
+            }
+            cervicalHelper.insertData(cervicalX, yVal);
+            cervicalList.add(new Entry(cervicalX,yVal));
+
+            cervicalDataSet.clear();
+
+            cervicalDataSet.setValues(getData2());
+            cervicalDataSet.setLabel("Cervical Dialation Readings");
+            cervicalDataSet.setDrawCircles(true);
+            cervicalDataSet.setDrawCircleHole(true);
+            cervicalDataSet.setCircleColor(Color.CYAN);
+            cervicalDataSet.setCircleRadius(7);
+            cervicalDataSet.setCircleHoleRadius(2);
+
+            cervicalDataSets.clear();
+            cervicalDataSets.add(cervicalDataSet1);
+            cervicalDataSets.add(cervicalDataSet2);
+            cervicalDataSets.add(cervicalDataSet);
+            cervicalDataSets.add(descendDataSet);
+
+            cervicalGraph.clear();
+            cervicalGraph.setData(new LineData(cervicalDataSets));
+//            cervicalGraph.setData(descendData);
+            cervicalGraph.invalidate();
+
+            cervicalPointsAdded = true;
+
+            cervicalX += 4;
+            okSound.start();
         }
+//        else{
+//            descendData.removeDataSet(descendDataSet);
+//
+//            if(descendPointAdded == false)
+//            {
+//                descendHelper.deleteAll();
+//            }
+//
+//            if((yVal < 1) || (yVal > 5)){
+//                Toast.makeText(getApplicationContext(),"Input out of feotal head descend range", Toast.LENGTH_LONG).show();
+//                invalidSound.start();
+//                return;
+//            }
+////            descendHelper.insertData(descendX, yVal);
+//            descendList.add(new Entry(descendX,yVal));
+//
+//            descendDataSet.clear();
+//
+//            descendDataSet.setValues(descendList);
+//            descendDataSet.setLabel("Foetal Head Readings");
+//            descendDataSet.setDrawCircles(true);
+//            descendDataSet.setDrawCircleHole(true);
+//            descendDataSet.setCircleColor(R.color.descend);
+//            descendDataSet.setCircleRadius(7);
+//            descendDataSet.setCircleHoleRadius(2);
+//
+//            cervicalDataSets.clear();
+//            cervicalDataSets.add(cervicalDataSet1);
+//            cervicalDataSets.add(cervicalDataSet2);
+//            cervicalDataSets.add(cervicalDataSet);
+//            cervicalDataSets.add(descendDataSet);
+////            cervicalData.addDataSet(cervicalDataSet);
+//            cervicalGraph.clear();
+////            cervicalGraph.setData(cervicalData);
+//            cervicalGraph.setData(new LineData(cervicalDataSets));
+//            cervicalGraph.invalidate();
+//
+//            descendPointAdded = true;
+//
+//            descendX += 4;
+//            okSound.start();
+//        }
 
-        if((yVal < 0) || (yVal > 10)){
-            Toast.makeText(getApplicationContext(),"Input out of cervical dialation range", Toast.LENGTH_LONG).show();
-            return;
-        }
-        cervicalHelper.insertData(cervicalX, yVal);
-
-        cervicalDataSet.clear();
-
-        cervicalDataSet.setValues(getData2());
-        cervicalDataSet.setLabel("Readings");
-        cervicalDataSet.setDrawCircles(true);
-        cervicalDataSet.setDrawCircleHole(true);
-        cervicalDataSet.setCircleColor(Color.CYAN);
-        cervicalDataSet.setCircleRadius(10);
-        cervicalDataSet.setCircleHoleRadius(5);
-
-        cervicalData.addDataSet(cervicalDataSet);
-        cervicalGraph.clear();
-        cervicalGraph.setData(cervicalData);
-        cervicalGraph.invalidate();
-
-        cervicalPointsAdded = true;
-
-        cervicalX += 4;
     }
 
     private void updateChart4(int yVal){
@@ -912,6 +1482,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 
         if((yVal < 60) || (yVal > 180)){
             Toast.makeText(getApplicationContext(),"Input out of Patient heart rate range", Toast.LENGTH_LONG).show();
+            invalidSound.start();
             return;
         }
 
@@ -935,6 +1506,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         maternalPointsAdded = true;
 
         maternalX += 4;
+        okSound.start();
     }
 
     private ArrayList<Entry> getData1() {
@@ -970,6 +1542,20 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         String [] columns = {"xValues","yValues"};
 
         Cursor cursor = maternalDB.query("MyGraph", columns, null, null, null, null, "xValues ASC");
+
+        for(int i=0; i<cursor.getCount(); i++)
+        {
+            cursor.moveToNext();
+            dp.add(new Entry(cursor.getInt(0),cursor.getInt(1)));
+        }
+        return dp;
+    }
+
+    private ArrayList<Entry> getData5() {
+        ArrayList<Entry> dp = new ArrayList<>();
+        String [] columns = {"xValues","yValues"};
+
+        Cursor cursor = descendDB.query("MyGraph", columns, null, null, null, null, "xValues ASC");
 
         for(int i=0; i<cursor.getCount(); i++)
         {

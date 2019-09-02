@@ -2,10 +2,10 @@
 
 grammar menu;
 
-public <menu> = <option> <graph> <tens>* <digits>*;
+public <menu> = <option> ((<graphs1><tens>* <digits>*)|(moulding <digits> [plus])|(fluid count <fluids>)|(pressure <tens>* <digits>* and <tens>* <digits>*));
 
 <option> = insert;
-<graph> = maternal | contraction | fetal | cervical;
+<graphs1> = maternal | fetal| cervical | head descend | temperature | oxytocin amount | oxytocin drops | contraction;
 <tens> = twenty  |
          thirty  |
          forty  |
@@ -37,3 +37,5 @@ public <menu> = <option> <graph> <tens>* <digits>*;
           seventeen  |
           eighteen  |
           nineteen;
+
+<fluids> = i | c | m | a | b;
