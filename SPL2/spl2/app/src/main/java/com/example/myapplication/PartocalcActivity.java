@@ -31,6 +31,7 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
@@ -100,7 +101,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
     private Toolbar toolbar;
     private String graphId;
     private Button cont;
-    private ScrollView scrollView;
+    private ScrollView scrollView,scrollViewB;
 
     private FirebaseFirestore firebaseFirestore;
 
@@ -197,6 +198,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         }
 
         scrollView = findViewById(R.id.contents);
+        scrollViewB = findViewById(R.id.scrollViewB);
 
         fluidLayout = findViewById(R.id.fluid_container);
         timeLayout = findViewById(R.id.time_container);
@@ -204,6 +206,24 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         medicineLayout = findViewById(R.id.medicine_container);
         tempLayout = findViewById(R.id.temp_container);
         urineLayout = findViewById(R.id.urine_container);
+
+        scrollView.getViewTreeObserver().addOnScrollChangedListener(new ViewTreeObserver.OnScrollChangedListener() {
+            @Override
+            public void onScrollChanged() {
+                int x = scrollView.getScrollX();
+                int y = scrollView.getScrollY();
+                scrollViewB.scrollTo(x,y);
+            }
+        });
+
+        scrollViewB.getViewTreeObserver().addOnScrollChangedListener(new ViewTreeObserver.OnScrollChangedListener() {
+            @Override
+            public void onScrollChanged() {
+                int x = scrollViewB.getScrollX();
+                int y = scrollViewB.getScrollY();
+                scrollView.scrollTo(x,y);
+            }
+        });
 
         setupBluetooth();
 
@@ -291,6 +311,16 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 //        });
     }
 
+
+    public void onScrollChanged(ScrollView view, int x, int y, int oldx, int oldy) {
+        if(view == scrollView){
+            scrollViewB.scrollTo(x,y);
+        }
+        else if(view == scrollViewB){
+            scrollView.scrollTo(x,y);
+        }
+    }
+
     private void getScreenDimension() {
 
         WindowManager wm= (WindowManager) getApplicationContext().getSystemService(Context.WINDOW_SERVICE);
@@ -350,7 +380,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         TableRow tableAdd = (TableRow) fluid.getChildAt(id);
         tableRow= new TableRow(getApplicationContext());
         Log.i("Fluid", "Fluid Width: " + fluid.getWidth());
-        TableRow.LayoutParams layoutParamsTableRow= new TableRow.LayoutParams(30, SCREEN_HEIGHT/22);
+        TableRow.LayoutParams layoutParamsTableRow= new TableRow.LayoutParams(27, SCREEN_HEIGHT/22);
         tableRow.setPadding(3,3,3,3);
         tableRow.setBackground(getDrawable(R.drawable.cell_bacground));
         tableRow.setLayoutParams(layoutParamsTableRow);
@@ -387,10 +417,10 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         TableRow.LayoutParams layoutParamsTableRow;
         if(id == 0)
         {
-            layoutParamsTableRow= new TableRow.LayoutParams(62, SCREEN_HEIGHT/18);
+            layoutParamsTableRow= new TableRow.LayoutParams(54, SCREEN_HEIGHT/18);
         }
         else{
-            layoutParamsTableRow= new TableRow.LayoutParams(62, SCREEN_HEIGHT/12);
+            layoutParamsTableRow= new TableRow.LayoutParams(54, SCREEN_HEIGHT/12);
         }
 
         tableRow.setPadding(3,3,3,3);
@@ -433,7 +463,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         TableRow tableAdd = (TableRow) oxytocin.getChildAt(id);
         tableRow= new TableRow(getApplicationContext());
         TableRow.LayoutParams layoutParamsTableRow;
-        layoutParamsTableRow= new TableRow.LayoutParams(31, SCREEN_HEIGHT/20);
+        layoutParamsTableRow= new TableRow.LayoutParams(28, SCREEN_HEIGHT/20);
         tableRow.setPadding(3,3,3,3);
         tableRow.setBackground(getDrawable(R.drawable.cell_bacground));
         tableRow.setLayoutParams(layoutParamsTableRow);
@@ -501,7 +531,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         EditText label_date = new EditText(getApplicationContext());
         label_date.setTextSize(getResources().getDimension(R.dimen.cell_text_size));
         label_date.setWidth(SCREEN_HEIGHT/3);
-        label_date.setHeight(61);
+        label_date.setHeight(55);
         label_date.setText("");
         label_date.setPadding(10,0,0,0);
         label_date.setBackground(getDrawable(R.drawable.cell_bacground));
@@ -533,7 +563,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         TableRow tableAdd = (TableRow) temperature.getChildAt(id);
         tableRow= new TableRow(getApplicationContext());
         TableRow.LayoutParams layoutParamsTableRow;
-        layoutParamsTableRow= new TableRow.LayoutParams(60, SCREEN_HEIGHT/20);
+        layoutParamsTableRow= new TableRow.LayoutParams(53, SCREEN_HEIGHT/20);
         tableRow.setPadding(3,3,3,3);
         tableRow.setBackground(getDrawable(R.drawable.cell_bacground));
         tableRow.setLayoutParams(layoutParamsTableRow);
@@ -575,7 +605,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         TableRow tableAdd = (TableRow) urine.getChildAt(id);
         tableRow= new TableRow(getApplicationContext());
         TableRow.LayoutParams layoutParamsTableRow;
-        layoutParamsTableRow= new TableRow.LayoutParams(60, SCREEN_HEIGHT/20);
+        layoutParamsTableRow= new TableRow.LayoutParams(53, SCREEN_HEIGHT/20);
         tableRow.setPadding(3,3,3,3);
         tableRow.setBackground(getDrawable(R.drawable.cell_bacground));
         tableRow.setLayoutParams(layoutParamsTableRow);
@@ -1013,7 +1043,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 
         TableRow temp = (TableRow) tableRow.getChildAt(oxyDrX);
         TextView tempText = (TextView) temp.getChildAt(0);
-        tempText.setText(Integer.toString(yVal  ));
+        tempText.setText(Integer.toString(yVal));
 
         oxyDrX++;
         okSound.start();
