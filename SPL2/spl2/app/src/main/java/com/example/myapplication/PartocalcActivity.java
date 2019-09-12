@@ -134,7 +134,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
     private BarData contractionData;
 
     private int fetalX = 0, fetalY, cervicalX = 0, cervicalY, contractionX = 0, contractionY, maternalX = 0, maternalY, descendX = 0;
-    private int fluidX=0, mouldingX=0, oxyAmX = 0, oxyDrX = 0, tempX=0;
+    private int fluidX=0, mouldingX=0, oxyAmX = 0, oxyDrX = 0, tempX=0, proteanX =0, acetoneX=0, amountX = 0;
 
 
     private static final int PERMISSIONS_REQUEST_RECORD_AUDIO = 1;
@@ -151,9 +151,10 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
     SQLiteDatabase fetalDB, cervicalDB, contractionDB, maternalDB, descendDB;
 
     private boolean fetalPointsAdded = false , cervicalPointsAdded = false, contractionPointsAdded = false, maternalPointsAdded = false, descendPointAdded = false;
-    private String[] charts = {"fetal", "cervical", "contraction", "maternal", "head descend","fluid count","moulding","oxytocin amount", "oxytocin drops","temperature"};
+    private String[] charts = {"fetal", "cervical", "contraction", "maternal", "head descend","fluid count","moulding","oxytocin amount", "oxytocin drops","temperature","protean","acetone","amount"};
     private String[] commands = {"insert", "delete"};
     private HashMap<String,Chart> chartHashMap;
+    private int[] counters = {0,0,0,0};
 
     private String[] tens = {"twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"};
     private String[] hundreds = {"hundred"};
@@ -237,7 +238,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         createGraphMaps();
         clearDatabase();
 
-        okSound = MediaPlayer.create(getApplicationContext(),R.raw.definite);
+        okSound = MediaPlayer.create(getApplicationContext(),R.raw.right);
         invalidSound = MediaPlayer.create(getApplicationContext(), R.raw.case_closed);
 //        initializeTextToSpeech();
         runRecognizerSetup();
@@ -610,7 +611,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         tableRow.setBackground(getDrawable(R.drawable.cell_bacground));
         tableRow.setLayoutParams(layoutParamsTableRow);
         TextView label_date = new TextView(getApplicationContext());
-        label_date.setText("+++");
+        label_date.setText("");
         label_date.setTextSize(12);
         this.tableRow.addView(label_date);
         this.tableRow.setTag("yolo");
@@ -956,13 +957,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
                     scrollView.smoothScrollTo(0, cervicalGraph.getTop());
                 }
                 else if(s.equals(charts[2])){
-                    if(!checkNumberValidity(s2)){
-                        Toast.makeText(getApplicationContext(), "invalid input", Toast.LENGTH_LONG).show();
-                        invalidSound.start();
-                        return;
-                    }
-                    int yVal = convertWordsToNum(s2);
-                    updateChart3(yVal);
+                    updateChart3(s2);
                     scrollView.smoothScrollTo(0, contractionGraph.getTop());
                 }
                 else if(s.equals(charts[3])){
@@ -1023,8 +1018,101 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
                     updateChart9(yVal);
                     scrollView.smoothScrollTo(0,tempLayout.getTop());
                 }
+                else if(s.equals(charts[10])){
+                    updateChart10(s2);
+                    scrollView.smoothScrollTo(0,urineLayout.getTop());
+                }
+                else if(s.equals(charts[11])){
+                    updateChart11(s2);
+                    scrollView.smoothScrollTo(0,urineLayout.getTop());
+                }
+                else if(s.equals(charts[12])){
+                    if(!checkNumberValidity(s2)){
+                        Toast.makeText(getApplicationContext(), "invalid input", Toast.LENGTH_LONG).show();
+                        invalidSound.start();
+                        return;
+                    }
+                    int yVal = convertWordsToNum(s2);
+                    updateChart12(yVal);
+                    scrollView.smoothScrollTo(0,urineLayout.getTop());
+                }
             }
         }
+    }
+
+    private void updateChart12(int yVal) {
+        tableRow = (TableRow) urine.getChildAt(2);
+
+        TableRow temp = (TableRow) tableRow.getChildAt(amountX);
+        TextView tempText = (TextView) temp.getChildAt(0);
+        tempText.setText(Integer.toString(yVal));
+
+        amountX++;
+        okSound.start();
+    }
+
+    private void updateChart11(String yVal) {
+        tableRow = (TableRow) urine.getChildAt(1);
+
+        TableRow temp = (TableRow) tableRow.getChildAt(acetoneX);
+        TextView tempText = (TextView) temp.getChildAt(0);
+        String ans = null;
+        if(yVal.contains(digits[0])){
+            ans = "0";
+        }
+        else if(yVal.contains(digits[1]))
+        {
+            ans = "+";
+        }
+        else if(yVal.contains(digits[2]))
+        {
+            ans = "++";
+        }
+        else if(yVal.contains(digits[3]))
+        {
+            ans = "+++";
+        }
+        else{
+            invalidSound.start();
+            return;
+        }
+        tempText.setTextSize(8);
+        tempText.setText(ans);
+
+        acetoneX++;
+        okSound.start();
+    }
+
+    private void updateChart10(String yVal) {
+        tableRow = (TableRow) urine.getChildAt(0);
+
+        TableRow temp = (TableRow) tableRow.getChildAt(proteanX);
+        TextView tempText = (TextView) temp.getChildAt(0);
+        String ans = null;
+        if(yVal.contains(digits[0])){
+            ans = "0";
+        }
+        else if(yVal.contains(digits[1]))
+        {
+            ans = "+";
+        }
+        else if(yVal.contains(digits[2]))
+        {
+            ans = "++";
+        }
+        else if(yVal.contains(digits[3]))
+        {
+            ans = "+++";
+        }
+        else{
+            invalidSound.start();
+            return;
+        }
+        tempText.setTextSize(8);
+        tempText.setText(ans);
+
+        proteanX++;
+        okSound.start();
     }
 
     private void updateChart9(int yVal) {
@@ -1220,7 +1308,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
             return true;
     }
 
-    private void updateChart3(int yVal) {
+    private void updateChart3(String s2) {
         contractionData.removeDataSet(contractionDataSet);
 
         if(contractionPointsAdded == false)
@@ -1228,8 +1316,22 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
             contractionHelper.deleteAll();
         }
 
+        int last = s2.indexOf("seconds");
+        String number = s2.substring(0,last);
+        String yValString = number.trim();
+        int yVal = convertWordsToNum(yValString);
+        Log.i("seconds", "updateChart3: " + yVal);
+
+        int lastIn = s2.length();
+        String secondsPhrase = s2.substring(last,lastIn);
+        String secondsNumber = secondsPhrase.replace("seconds", "");
+        String valueSeconds = secondsNumber.trim();
+        int seconds = convertWordsToNum(valueSeconds);
+        Log.i("seconds", "updateChart3: " + seconds);
+
         if((yVal < 2) || (yVal > 5)){
             Toast.makeText(getApplicationContext(),"Input out of Contraction range", Toast.LENGTH_LONG).show();
+            invalidSound.start();
             invalidSound.start();
             return;
         }
@@ -1242,6 +1344,13 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
             contractionDataSet.clear();
             contractionDataSet.setValues(getBarData());
         }
+
+        if(seconds > 40)
+            contractionDataSet.setColor(getResources().getColor(R.color.contraction3));
+        else if(seconds <= 40 && seconds >= 20)
+            contractionDataSet.setColor(getResources().getColor(R.color.contraction2));
+        else if(seconds < 20)
+            contractionDataSet.setColor(getResources().getColor(R.color.contraction1));
 
         contractionData.addDataSet(contractionDataSet);
         contractionGraph.clear();

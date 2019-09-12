@@ -7,6 +7,9 @@
     <color name="btncolor">#F44336</color>
     <color name="whitetransparent">#80FFFFFF</color>
     <color name="descend">#8BC34A</color>
+    <color name="contraction1">#696969</color>
+    <color name="contraction2">#443E3E</color>
+    <color name="contraction3">#000000</color>
 
 
     <color name="whiteTransparentHalf">#80FFFFFF</color>

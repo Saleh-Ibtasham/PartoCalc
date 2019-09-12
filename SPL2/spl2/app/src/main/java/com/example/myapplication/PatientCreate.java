@@ -83,11 +83,64 @@ public class PatientCreate extends AppCompatActivity {
 
                 Toast.makeText(PatientCreate.this, "Patient Created",Toast.LENGTH_LONG).show();
 
+                Intent calcActivity = new Intent(PatientCreate.this,PartocalcActivity.class);
+                startActivity(calcActivity);
+                finish();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                 if(!TextUtils.isEmpty(patient_name) && !TextUtils.isEmpty(patient_gravida) &&!TextUtils.isEmpty(patient_hosnum)
                         &&!TextUtils.isEmpty(patient_membrane) &&!TextUtils.isEmpty(patient_para) &&!TextUtils.isEmpty(patient_hour)){
                     progressBar.setVisibility(View.VISIBLE);
-                    storeFirestore(patient_name,patient_gravida,patient_para,patient_hour,patient_membrane,
-                            patient_para,patient_hosnum,patient_adTime,patient_adDate);
+//                    storeFirestore(patient_name,patient_gravida,patient_para,patient_hour,patient_membrane,
+//                            patient_para,patient_hosnum,patient_adTime,patient_adDate);
                 }
             }
         });
@@ -189,23 +242,25 @@ public class PatientCreate extends AppCompatActivity {
 
         final Map<String , String > newmap = new HashMap<>();
         newmap.put("userId",userId);
-        firebaseFirestore.collection("graphs").document(graphId).set(newmap).addOnCompleteListener(new OnCompleteListener<Void>() {
-            @Override
-            public void onComplete(@NonNull Task<Void> task) {
-                if(task.isSuccessful())
-                {
-                    Toast.makeText(PatientCreate.this,"Added graph with ID: " + graphId, Toast.LENGTH_LONG).show();
-                    Intent calcActivity = new Intent(PatientCreate.this,PartocalcActivity.class);
-                    calcActivity.putExtra("graphId",graphId);
-                    startActivity(calcActivity);
-                    finish();
-                }
-                else{
-                    String e = task.getException().getMessage();
-                    Toast.makeText(PatientCreate.this,"(FireStore Error) : " + e,Toast.LENGTH_LONG).show();
-                }
-            }
-        });
+
+
+//        firebaseFirestore.collection("graphs").document(graphId).set(newmap).addOnCompleteListener(new OnCompleteListener<Void>() {
+//            @Override
+//            public void onComplete(@NonNull Task<Void> task) {
+//                if(task.isSuccessful())
+//                {
+//                    Toast.makeText(PatientCreate.this,"Added graph with ID: " + graphId, Toast.LENGTH_LONG).show();
+//                    Intent calcActivity = new Intent(PatientCreate.this,PartocalcActivity.class);
+//                    calcActivity.putExtra("graphId",graphId);
+//                    startActivity(calcActivity);
+//                    finish();
+//                }
+//                else{
+//                    String e = task.getException().getMessage();
+//                    Toast.makeText(PatientCreate.this,"(FireStore Error) : " + e,Toast.LENGTH_LONG).show();
+//                }
+//            }
+//        });
     }
 
 }
