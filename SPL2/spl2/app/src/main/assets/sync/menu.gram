@@ -2,11 +2,14 @@
 
 grammar menu;
 
-public <menu> = <option> ((<graphs1><tens>* <digits>*)|(<graphs2> <digits> [plus])|(fluid status <fluids>)|(pressure <tens>* <digits>* and <tens>* <digits>*)|(contraction <digits> seconds <tens>*<digits>*));
+public <menu> = <option> ((<graphs1>[<tens2>][<tens>][<digits>][<digits2>])|(<graphs2> <digits> [plus])|(fluid status <fluids>)|(pressure [<tens2>][<tens>][<digits>][<digits2>] and [<tens2>][<tens>][<digits>][<digits2>])|(contraction <digits> seconds [<tensContraction>][<digits>][<digits2>]));
 
 <option> = insert;
+
 <graphs1> = maternal | fetal| cervical | head descend | temperature | oxytocin amount | oxytocin drops | amount;
+
 <graphs2> = protean | acetone | moulding;
+
 <tens> = twenty  |
          thirty  |
          forty  |
@@ -14,9 +17,17 @@ public <menu> = <option> ((<graphs1><tens>* <digits>*)|(<graphs2> <digits> [plus
          sixty  |
          seventy  |
          eighty  |
-         ninety  |
-         one hundred |
+         ninety;
+
+<tens2> = one hundred |
          two hundred ;
+
+<tensContraction> = twenty  |
+         thirty  |
+         forty  |
+         fifty  |
+         sixty  |
+         seventy;
 
 <digits> = zero  |
           one   |
@@ -27,8 +38,9 @@ public <menu> = <option> ((<graphs1><tens>* <digits>*)|(<graphs2> <digits> [plus
           six   |
           seven |
           eight |
-          nine  |
-          ten   |
+          nine  ;
+
+<digits2> = ten   |
           eleven  |
           twelve  |
           thirteen  |

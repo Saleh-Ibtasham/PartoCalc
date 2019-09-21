@@ -47,6 +47,7 @@ import android.widget.Toast;
 import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.charts.Chart;
 import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.Legend;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.BarData;
@@ -56,6 +57,7 @@ import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
+import com.github.mikephil.charting.utils.ColorTemplate;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
@@ -162,6 +164,8 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
             "seven", "eight", "nine", "ten"};
     private String[] teens = {"eleven", "twelve", "thirteen", "fourteen", "fifteen",
             "sixteen", "seventeen", "eighteen", "nineteen"};
+
+    private List<Integer> barColors = new ArrayList<>();
 
     private BluetoothHeadset bluetoothHeadset;
     private BluetoothAdapter bluetoothAdapter;
@@ -1206,27 +1210,27 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         String prunedNumber = pruneNumber(s2);
 
         if(!tensTest(prunedNumber)){
-            Log.d("tensTest", "invalid");
+            Log.i("tensTest", "invalid");
             return false;
         }
 
         if(!teensTest(prunedNumber)){
-            Log.d("teensTest", "invalid");
+            Log.i("teensTest", "invalid");
             return false;
         }
 
         if(!onesTest(prunedNumber)){
-            Log.d("onesTest", "invalid");
+            Log.i("onesTest", "invalid");
             return false;
         }
 
         if(!invalidityOfTens(prunedNumber)){
-            Log.d("invalidity of Tens", "invalid");
+            Log.i("invalidity of Tens", "invalid");
             return false;
         }
 
         if(!invalidityOfTeens(prunedNumber)){
-            Log.d("invalidity of Teens", "invalid");
+            Log.i("invalidity of Teens", prunedNumber);
             return false;
         }
 
@@ -1238,7 +1242,8 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         for(String s: teens){
             if(prunedNumber.contains(s)){
                 for(String string: digits){
-                    if(prunedNumber.contains(string)){
+                    String matcherString = "\\b"+string+"\\b";
+                    if(prunedNumber.contains(matcherString)){
                         answer = false;
                     }
                 }
@@ -1268,7 +1273,8 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         for(String s: tens){
             if(prunedNumber.contains(s)){
                 for(String string: teens){
-                    if(prunedNumber.contains(string)){
+                    String matcherString = "\\b"+string+"\\b";
+                    if(prunedNumber.contains(matcherString)){
                         answer = false;
                     }
                 }
@@ -1319,13 +1325,25 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         int last = s2.indexOf("seconds");
         String number = s2.substring(0,last);
         String yValString = number.trim();
+        if(!checkNumberValidity(yValString)){
+            Log.i("yvalString", "updateChart3: "+yValString);
+            Toast.makeText(getApplicationContext(), "invalid input", Toast.LENGTH_LONG).show();
+            invalidSound.start();
+            return;
+        }
         int yVal = convertWordsToNum(yValString);
-        Log.i("seconds", "updateChart3: " + yVal);
+        Log.i("value", "updateChart3: " + yVal);
 
         int lastIn = s2.length();
         String secondsPhrase = s2.substring(last,lastIn);
         String secondsNumber = secondsPhrase.replace("seconds", "");
         String valueSeconds = secondsNumber.trim();
+        if(!checkNumberValidity(valueSeconds)){
+            Log.i("valueSeconds", "updateChart3: "+valueSeconds+"hello");
+            Toast.makeText(getApplicationContext(), "invalid input", Toast.LENGTH_LONG).show();
+            invalidSound.start();
+            return;
+        }
         int seconds = convertWordsToNum(valueSeconds);
         Log.i("seconds", "updateChart3: " + seconds);
 
@@ -1346,12 +1364,14 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         }
 
         if(seconds > 40)
-            contractionDataSet.setColor(getResources().getColor(R.color.contraction3));
-        else if(seconds <= 40 && seconds >= 20)
-            contractionDataSet.setColor(getResources().getColor(R.color.contraction2));
+            barColors.add(getResources().getColor(R.color.contraction3));
+        else if((seconds <= 40) && (seconds >= 20))
+            barColors.add(getResources().getColor(R.color.contraction2));
         else if(seconds < 20)
-            contractionDataSet.setColor(getResources().getColor(R.color.contraction1));
+            barColors.add(getResources().getColor(R.color.contraction1));
 
+        contractionGraph.getLegend().setEnabled(false);
+        contractionDataSet.setColors(barColors);
         contractionData.addDataSet(contractionDataSet);
         contractionGraph.clear();
         contractionGraph.setData(contractionData);
@@ -1521,6 +1541,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 
         fetalX += 4;
         okSound.start();
+
     }
 
     private void updateChart2(int yVal, int x){
@@ -1562,6 +1583,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
             cervicalGraph.invalidate();
 
             cervicalPointsAdded = true;
+
 
             cervicalX += 4;
             okSound.start();
