@@ -1,11 +1,9 @@
 package com.example.myapplication;
 
-import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
-import android.net.Uri;
 import android.os.Bundle;
 import android.speech.RecognizerIntent;
 import android.support.v4.app.Fragment;
@@ -123,7 +121,7 @@ public class MaternalReadings extends Fragment {
 
                 int yVal = Integer.parseInt(value);
 
-                myHelper.insertData(xVal, yVal);
+                myHelper.insertData(xVal, yVal, "fetalGraph");
 
                 lineDataSet.clear();
                 lineDataSet.setValues(getData());
@@ -160,7 +158,7 @@ public class MaternalReadings extends Fragment {
                 lineData.removeDataSet(lineDataSet);
                 graph.setData(lineData);
                 graph.invalidate();
-                myHelper.deleteAll();
+                myHelper.deleteAll("fetal");
                 xInput.setText(Integer.toString(0));
                 yInput.setText("");
             }

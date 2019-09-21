@@ -106,10 +106,10 @@ public class BarActivity extends Fragment {
 
                 if(pointsAdded == false)
                 {
-                    myHelper.deleteAll();
+                    myHelper.deleteAll("fetal");
                 }
 
-                myHelper.insertData(xVal, yVal);
+                myHelper.insertData(xVal, yVal, "fetalGraph");
 
                 savedEntries = getData();
                 if(contractionDataSet == null)
@@ -141,7 +141,7 @@ public class BarActivity extends Fragment {
                 contractionData.removeDataSet(contractionDataSet);
                 contractionGraph.setData(contractionData);
                 contractionGraph.invalidate();
-                myHelper.deleteAll();
+                myHelper.deleteAll("fetal");
                 xInput.setText(Integer.toString(0));
                 yInput.setText("");
             }
@@ -194,7 +194,7 @@ public class BarActivity extends Fragment {
         contractionData.removeDataSet(contractionDataSet);
         contractionGraph.setData(contractionData);
         contractionGraph.invalidate();
-        myHelper.deleteAll();
+        myHelper.deleteAll("fetal");
         xInput.setText(Integer.toString(0));
         yInput.setText("");
     }

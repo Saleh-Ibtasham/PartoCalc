@@ -21,14 +21,9 @@ import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v7.widget.AppCompatEditText;
 import android.support.v7.widget.Toolbar;
-import android.util.AttributeSet;
 import android.util.Log;
-import android.util.Xml;
 import android.view.Display;
-import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.ViewTreeObserver;
@@ -38,7 +33,6 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
-import android.widget.Space;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
@@ -47,7 +41,6 @@ import android.widget.Toast;
 import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.charts.Chart;
 import com.github.mikephil.charting.charts.LineChart;
-import com.github.mikephil.charting.components.Legend;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.BarData;
@@ -57,7 +50,6 @@ import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
-import com.github.mikephil.charting.utils.ColorTemplate;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
@@ -66,13 +58,8 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.vikramezhil.droidspeech.DroidSpeech;
 import com.vikramezhil.droidspeech.OnDSListener;
 
-import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserException;
-import org.xmlpull.v1.XmlPullParserFactory;
-
 import java.io.File;
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -135,7 +122,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
     private LineData fetalData, cervicalData, maternalData, descendData;
     private BarData contractionData;
 
-    private int fetalX = 0, fetalY, cervicalX = 0, cervicalY, contractionX = 0, contractionY, maternalX = 0, maternalY, descendX = 0;
+    private int fetalX = 0, fetalY, cervicalX = 1, cervicalY, contractionX = 0, contractionY, maternalX = 0, maternalY, descendX = 1;
     private int fluidX=0, mouldingX=0, oxyAmX = 0, oxyDrX = 0, tempX=0, proteanX =0, acetoneX=0, amountX = 0;
 
 
@@ -149,14 +136,15 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 
     private MediaPlayer okSound, invalidSound;
 
-    MyHelper fetalHelper,cervicalHelper,contractionHelper,maternalHelper,descendHelper;
-    SQLiteDatabase fetalDB, cervicalDB, contractionDB, maternalDB, descendDB;
+    MyHelper fetalHelper,cervicalHelper,contractionHelper,maternalHelper,descendHelper,myHelper;
+    SQLiteDatabase fetalDB, cervicalDB, contractionDB, maternalDB, descendDB,sqLiteDatabase;
 
     private boolean fetalPointsAdded = false , cervicalPointsAdded = false, contractionPointsAdded = false, maternalPointsAdded = false, descendPointAdded = false;
-    private String[] charts = {"fetal", "cervical", "contraction", "maternal", "head descend","fluid count","moulding","oxytocin amount", "oxytocin drops","temperature","protean","acetone","amount"};
+    private String[] charts = {"fetal", "cervical", "contraction", "maternal", "head descend","fluid status","moulding","oxytocin amount", "oxytocin drops","temperature","protean","acetone","amount"};
     private String[] commands = {"insert", "delete"};
     private HashMap<String,Chart> chartHashMap;
     private int[] counters = {0,0,0,0};
+    private String[] xAxisCervical = new String[24];
 
     private String[] tens = {"twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"};
     private String[] hundreds = {"hundred"};
@@ -234,13 +222,14 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 
         getScreenDimension();
 
+        createHelper();
         createFetal();
         createCervical();
         createContraction();
         createMaternal();
         craeteTables();
         createGraphMaps();
-        clearDatabase();
+//        clearDatabase();
 
         okSound = MediaPlayer.create(getApplicationContext(),R.raw.right);
         invalidSound = MediaPlayer.create(getApplicationContext(), R.raw.case_closed);
@@ -314,6 +303,12 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 //                openSpeechRecog();
 //            }
 //        });
+    }
+
+    private void createHelper() {
+        myHelper = new MyHelper(getApplicationContext());
+        sqLiteDatabase = myHelper.getWritableDatabase();
+        myHelper.onCreate(sqLiteDatabase);
     }
 
 
@@ -391,7 +386,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         tableRow.setLayoutParams(layoutParamsTableRow);
         TextView label_date = new TextView(getApplicationContext());
         label_date.setText("");
-        label_date.setTextSize(getResources().getDimension(R.dimen.cell_text_size));
+        label_date.setTextSize(12);
         this.tableRow.addView(label_date);
         this.tableRow.setTag("yolo");
         tableAdd.addView(tableRow);
@@ -468,7 +463,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         TableRow tableAdd = (TableRow) oxytocin.getChildAt(id);
         tableRow= new TableRow(getApplicationContext());
         TableRow.LayoutParams layoutParamsTableRow;
-        layoutParamsTableRow= new TableRow.LayoutParams(28, SCREEN_HEIGHT/20);
+        layoutParamsTableRow= new TableRow.LayoutParams(27, SCREEN_HEIGHT/20);
         tableRow.setPadding(3,3,3,3);
         tableRow.setBackground(getDrawable(R.drawable.cell_bacground));
         tableRow.setLayoutParams(layoutParamsTableRow);
@@ -630,10 +625,11 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
     }
 
     private void clearDatabase() {
-        fetalHelper.deleteAll();
-        contractionHelper.deleteAll();
-        maternalHelper.deleteAll();
-        cervicalHelper.deleteAll();
+        myHelper.deleteAll("fetalGraph");
+        myHelper.deleteAll("contractionGraph");
+        myHelper.deleteAll("maternalGraph");
+        myHelper.deleteAll("cervicalGraph");
+        myHelper.deleteAll("descendGraph");
     }
 
     private void setupBluetooth() {
@@ -695,8 +691,8 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
     private void createFetal() {
         fetalGraph = findViewById(R.id.fetal_graph);
 
-        fetalHelper = new MyHelper(getApplicationContext());
-        fetalDB = fetalHelper.getWritableDatabase();
+//        fetalHelper = new MyHelper(getApplicationContext());
+//        fetalDB = fetalHelper.getWritableDatabase();
 
         fetalDataSet1 = new LineDataSet(null,null);
         fetalDataSet2 = new LineDataSet(null,null);
@@ -736,6 +732,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         yAxis2.setGranularity(1f);
         xAxis.setGranularity(1f);
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+        yAxis2.setDrawLabels(false);
 
         fetalGraph.setData(fetalData);
         fetalGraph.invalidate();
@@ -744,14 +741,16 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
     private void createCervical(){
         cervicalGraph = findViewById(R.id.cervical_graph);
 
-        cervicalHelper = new MyHelper(getApplicationContext());
-        cervicalDB = cervicalHelper.getWritableDatabase();
+//        cervicalHelper = new MyHelper(getApplicationContext());
+//        cervicalDB = cervicalHelper.getWritableDatabase();
 
-        descendHelper = new MyHelper(getApplicationContext());
-        descendDB = descendHelper.getWritableDatabase();
+//        descendHelper = new MyHelper(getApplicationContext());
+//        descendDB = descendHelper.getWritableDatabase();
 
         cervicalDataSet1 = new LineDataSet(null,null);
         cervicalDataSet2 = new LineDataSet(null,null);
+
+        initializeXAxisCervical();
 
         cervicalDataSet1.addEntry(new Entry(0,4));
         cervicalDataSet1.addEntry(new Entry(12,10));
@@ -792,17 +791,25 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         yAxis2.setGranularity(1f);
         xAxis.setGranularity(1f);
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-
+        yAxis2.setDrawLabels(false);
 
         cervicalGraph.setData(cervicalData);
         cervicalGraph.invalidate();
     }
 
+    private void initializeXAxisCervical() {
+        int x =1;
+        for(int i=0; i<24; i++){
+            xAxisCervical[i] = Integer.toString(x);
+            x++;
+        }
+    }
+
     private void createContraction(){
         contractionGraph = findViewById(R.id.contraction_graph);
 
-        contractionHelper = new MyHelper(getApplicationContext());
-        contractionDB = contractionHelper.getWritableDatabase();
+//        contractionHelper = new MyHelper(getApplicationContext());
+//        contractionDB = contractionHelper.getWritableDatabase();
 
         contractionData = new BarData();
 
@@ -825,6 +832,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         yAxis2.setGranularity(1f);
         xAxis.setGranularity(1f);
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+        yAxis2.setDrawLabels(false);
 
         contractionGraph.setData(contractionData);
         contractionGraph.invalidate();
@@ -833,8 +841,8 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
     private void createMaternal(){
         maternalGraph = findViewById(R.id.maternal_graph);
 
-        maternalHelper = new MyHelper(getApplicationContext());
-        maternalDB = maternalHelper.getWritableDatabase();
+//        maternalHelper = new MyHelper(getApplicationContext());
+//        maternalDB = maternalHelper.getWritableDatabase();
 
         maternalData = new LineData();
 
@@ -857,6 +865,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         yAxis2.setGranularity(1f);
         xAxis.setGranularity(1f);
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+        yAxis2.setDrawLabels(false);
 
         maternalGraph.setData(maternalData);
         maternalGraph.invalidate();
@@ -948,7 +957,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
                     }
                     int yVal = convertWordsToNum(s2);
                     updateChart1(yVal);
-                    scrollView.smoothScrollTo(0, fetalGraph.getTop());
+                    scrollView.smoothScrollTo(0, fetalGraph.getTop()-100);
                 }
                 else if(s.equals(charts[1])){
                     if(!checkNumberValidity(s2)){
@@ -958,11 +967,11 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
                     }
                     int yVal = convertWordsToNum(s2);
                     updateChart2(yVal,1);
-                    scrollView.smoothScrollTo(0, cervicalGraph.getTop());
+                    scrollView.smoothScrollTo(0, cervicalGraph.getTop()-100);
                 }
                 else if(s.equals(charts[2])){
                     updateChart3(s2);
-                    scrollView.smoothScrollTo(0, contractionGraph.getTop());
+                    scrollView.smoothScrollTo(0, contractionGraph.getTop()-100);
                 }
                 else if(s.equals(charts[3])){
                     if(!checkNumberValidity(s2)){
@@ -972,7 +981,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
                     }
                     int yVal = convertWordsToNum(s2);
                     updateChart4(yVal);
-                    scrollView.smoothScrollTo(0, maternalGraph.getTop());
+                    scrollView.smoothScrollTo(0, maternalGraph.getTop()-100);
                 }
                 else if(s.equals(charts[4])){
                     if(!checkNumberValidity(s2)){
@@ -982,15 +991,15 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
                     }
                     int yVal = convertWordsToNum(s2);
                     updateChart2(yVal,2);
-                    scrollView.smoothScrollTo(0, cervicalGraph.getTop());
+                    scrollView.smoothScrollTo(0, cervicalGraph.getTop()-100);
                 }
                 else if(s.equals(charts[5])){
                     updateChart5(s2);
-                    scrollView.smoothScrollTo(0,fluidLayout.getTop());
+                    scrollView.smoothScrollTo(0,fluidLayout.getTop()-100);
                 }
                 else if(s.equals(charts[6])){
                     updateChart6(s2);
-                    scrollView.smoothScrollTo(0,fluidLayout.getTop());
+                    scrollView.smoothScrollTo(0,fluidLayout.getTop()-100);
                 }
                 else if(s.equals(charts[7])){
                     if(!checkNumberValidity(s2)){
@@ -1000,7 +1009,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
                     }
                     int yVal = convertWordsToNum(s2);
                     updateChart7(yVal);
-                    scrollView.smoothScrollTo(0,oxytocinLayout.getTop());
+                    scrollView.smoothScrollTo(0,oxytocinLayout.getTop()-100);
                 }
                 else if(s.equals(charts[8])){
                     if(!checkNumberValidity(s2)){
@@ -1010,7 +1019,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
                     }
                     int yVal = convertWordsToNum(s2);
                     updateChart8(yVal);
-                    scrollView.smoothScrollTo(0,oxytocinLayout.getTop());
+                    scrollView.smoothScrollTo(0,oxytocinLayout.getTop()-100);
                 }
                 else if(s.equals(charts[9])){
                     if(!checkNumberValidity(s2)){
@@ -1020,15 +1029,15 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
                     }
                     int yVal = convertWordsToNum(s2);
                     updateChart9(yVal);
-                    scrollView.smoothScrollTo(0,tempLayout.getTop());
+                    scrollView.smoothScrollTo(0,tempLayout.getTop()-100);
                 }
                 else if(s.equals(charts[10])){
                     updateChart10(s2);
-                    scrollView.smoothScrollTo(0,urineLayout.getTop());
+                    scrollView.smoothScrollTo(0,urineLayout.getTop()-100);
                 }
                 else if(s.equals(charts[11])){
                     updateChart11(s2);
-                    scrollView.smoothScrollTo(0,urineLayout.getTop());
+                    scrollView.smoothScrollTo(0,urineLayout.getTop()-100);
                 }
                 else if(s.equals(charts[12])){
                     if(!checkNumberValidity(s2)){
@@ -1038,7 +1047,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
                     }
                     int yVal = convertWordsToNum(s2);
                     updateChart12(yVal);
-                    scrollView.smoothScrollTo(0,urineLayout.getTop());
+                    scrollView.smoothScrollTo(0,urineLayout.getTop()-100);
                 }
             }
         }
@@ -1198,7 +1207,9 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
     private boolean checkNumberValidity(String s2) {
         String []words = s2.split(" ");
 
-        Toast.makeText(getApplicationContext(), "input here", Toast.LENGTH_LONG).show();
+        Log.i("S2", "checkNumberValidity: "+s2);
+
+//        Toast.makeText(getApplicationContext(), "input here", Toast.LENGTH_LONG).show();
 
         if(s2.equals("")){
             return false;
@@ -1208,6 +1219,8 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
             return false;
         }
         String prunedNumber = pruneNumber(s2);
+
+        Log.i("PrunedNumber", "checkNumberValidity: "+prunedNumber);
 
         if(!tensTest(prunedNumber)){
             Log.i("tensTest", "invalid");
@@ -1242,8 +1255,9 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         for(String s: teens){
             if(prunedNumber.contains(s)){
                 for(String string: digits){
-                    String matcherString = "\\b"+string+"\\b";
-                    if(prunedNumber.contains(matcherString)){
+                    Pattern pattern = Pattern.compile("\\b"+string+"\\b");
+                    Matcher matcher = pattern.matcher(prunedNumber);
+                    if(matcher.find()){
                         answer = false;
                     }
                 }
@@ -1273,8 +1287,10 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         for(String s: tens){
             if(prunedNumber.contains(s)){
                 for(String string: teens){
-                    String matcherString = "\\b"+string+"\\b";
-                    if(prunedNumber.contains(matcherString)){
+                    Pattern pattern = Pattern.compile("\\b"+string+"\\b");
+                    Matcher matcher = pattern.matcher(prunedNumber);
+                    Log.i("MatcherString", "invalidityOfTens: "+pattern);
+                    if(matcher.find()){
                         answer = false;
                     }
                 }
@@ -1319,7 +1335,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 
         if(contractionPointsAdded == false)
         {
-            contractionHelper.deleteAll();
+            myHelper.deleteAll("contractionGraph");
         }
 
         int last = s2.indexOf("seconds");
@@ -1354,7 +1370,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
             return;
         }
 
-        contractionHelper.insertData(contractionX, yVal);
+        myHelper.insertData(contractionX, yVal, "contractionGraph");
 
         if(contractionDataSet == null)
             contractionDataSet = new BarDataSet(getBarData(),"bardata");
@@ -1370,7 +1386,9 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         else if(seconds < 20)
             barColors.add(getResources().getColor(R.color.contraction1));
 
+        contractionData.setBarWidth(1f);
         contractionGraph.getLegend().setEnabled(false);
+        contractionGraph.setFitBars(true);
         contractionDataSet.setColors(barColors);
         contractionData.addDataSet(contractionDataSet);
         contractionGraph.clear();
@@ -1379,7 +1397,8 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 
         contractionPointsAdded = true;
 
-        contractionX += 4;
+
+        contractionX += 1;
         okSound.start();
     }
 
@@ -1387,7 +1406,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         ArrayList<BarEntry> dp = new ArrayList<>();
         String [] columns = {"xValues","yValues"};
 
-        Cursor cursor = contractionDB.query("MyGraph", columns, null, null, null, null, "xValues ASC");
+        Cursor cursor = sqLiteDatabase.query("contractionGraph", columns, null, null, null, null, "xValues ASC");
 
         for(int i=0; i<cursor.getCount(); i++)
         {
@@ -1511,7 +1530,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 
         if(fetalPointsAdded == false)
         {
-            fetalHelper.deleteAll();
+            myHelper.deleteAll("fetalGraph");
         }
 
         if((yVal < 80) || (yVal > 200)){
@@ -1520,7 +1539,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
             return;
         }
 
-        fetalHelper.insertData(fetalX, yVal);
+        myHelper.insertData(fetalX, yVal,"fetalGraph");
 
         fetalDataSet.clear();
 
@@ -1543,14 +1562,13 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         okSound.start();
 
     }
-
+//    https://brightinventions.pl/blog/charts-on-android-2/
     private void updateChart2(int yVal, int x){
         if(x == 1){
-            cervicalData.removeDataSet(cervicalDataSet);
 
             if(cervicalPointsAdded == false)
             {
-                cervicalHelper.deleteAll();
+                myHelper.deleteAll("cervicalGraph");
             }
 
             if((yVal < 0) || (yVal > 10)){
@@ -1558,79 +1576,86 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
                 invalidSound.start();
                 return;
             }
-            cervicalHelper.insertData(cervicalX, yVal);
-            cervicalList.add(new Entry(cervicalX,yVal));
+            myHelper.insertData(cervicalX, yVal, "cervicalGraph");
 
-            cervicalDataSet.clear();
-
-            cervicalDataSet.setValues(getData2());
-            cervicalDataSet.setLabel("Cervical Dialation Readings");
-            cervicalDataSet.setDrawCircles(true);
-            cervicalDataSet.setDrawCircleHole(true);
-            cervicalDataSet.setCircleColor(Color.CYAN);
-            cervicalDataSet.setCircleRadius(7);
-            cervicalDataSet.setCircleHoleRadius(2);
-
-            cervicalDataSets.clear();
-            cervicalDataSets.add(cervicalDataSet1);
-            cervicalDataSets.add(cervicalDataSet2);
-            cervicalDataSets.add(cervicalDataSet);
-            cervicalDataSets.add(descendDataSet);
-
-            cervicalGraph.clear();
-            cervicalGraph.setData(new LineData(cervicalDataSets));
-//            cervicalGraph.setData(descendData);
-            cervicalGraph.invalidate();
-
+//            Entry newEntry = new Entry(cervicalX,yVal);
+//            newEntry.setIcon();
+//            cervicalDataSet.setDrawIcons(true);
+//            cervicalList.add(newEntry);
+//
+//            printListCervical();
             cervicalPointsAdded = true;
-
-
             cervicalX += 4;
-            okSound.start();
         }
-//        else{
-//            descendData.removeDataSet(descendDataSet);
-//
-//            if(descendPointAdded == false)
-//            {
-//                descendHelper.deleteAll();
-//            }
-//
-//            if((yVal < 1) || (yVal > 5)){
-//                Toast.makeText(getApplicationContext(),"Input out of feotal head descend range", Toast.LENGTH_LONG).show();
-//                invalidSound.start();
-//                return;
-//            }
-////            descendHelper.insertData(descendX, yVal);
-//            descendList.add(new Entry(descendX,yVal));
-//
-//            descendDataSet.clear();
-//
-//            descendDataSet.setValues(descendList);
-//            descendDataSet.setLabel("Foetal Head Readings");
-//            descendDataSet.setDrawCircles(true);
-//            descendDataSet.setDrawCircleHole(true);
-//            descendDataSet.setCircleColor(R.color.descend);
-//            descendDataSet.setCircleRadius(7);
-//            descendDataSet.setCircleHoleRadius(2);
-//
-//            cervicalDataSets.clear();
-//            cervicalDataSets.add(cervicalDataSet1);
-//            cervicalDataSets.add(cervicalDataSet2);
-//            cervicalDataSets.add(cervicalDataSet);
-//            cervicalDataSets.add(descendDataSet);
-////            cervicalData.addDataSet(cervicalDataSet);
-//            cervicalGraph.clear();
-////            cervicalGraph.setData(cervicalData);
-//            cervicalGraph.setData(new LineData(cervicalDataSets));
-//            cervicalGraph.invalidate();
-//
-//            descendPointAdded = true;
-//
-//            descendX += 4;
-//            okSound.start();
-//        }
+        else{
+            cervicalData.removeDataSet(descendDataSet);
 
+            if(descendPointAdded == false)
+            {
+                myHelper.deleteAll("descendGraph");
+            }
+
+            if((yVal < 1) || (yVal > 5)){
+                Toast.makeText(getApplicationContext(),"Input out of feotal head descend range", Toast.LENGTH_LONG).show();
+                invalidSound.start();
+                return;
+            }
+            myHelper.insertData(descendX, yVal, "descendGraph");
+
+            descendPointAdded = true;
+
+            descendX += 4;
+        }
+
+        cervicalDataSet = new LineDataSet(getData2(),"Cervical Dialation");
+        cervicalDataSet.setDrawCircles(true);
+        cervicalDataSet.setDrawCircleHole(true);
+        cervicalDataSet.setCircleColor(Color.CYAN);
+        cervicalDataSet.setCircleRadius(7);
+        cervicalDataSet.setCircleHoleRadius(2);
+
+
+
+        descendDataSet = new LineDataSet(getData5(),"Foetal Head Decent");
+        descendDataSet.setLabel("Foetal Head Readings");
+        descendDataSet.setDrawCircles(true);
+        descendDataSet.setDrawCircleHole(true);
+        descendDataSet.setCircleColor(R.color.descend);
+        descendDataSet.setCircleRadius(7);
+        descendDataSet.setCircleHoleRadius(2);
+
+
+        cervicalDataSets.clear();
+        cervicalDataSets.add(cervicalDataSet1);
+        cervicalDataSets.add(cervicalDataSet2);
+        cervicalDataSets.add(cervicalDataSet);
+        cervicalDataSets.add(descendDataSet);
+
+        Log.i("cervicalDatasets", "updateChart2: "+cervicalDataSets.size());
+        Log.i("cervicalDataset", "updateChart2: "+cervicalDataSet.getEntryCount());
+        Log.i("descendDataset", "updateChart2:"+descendDataSet.getEntryCount());
+
+        cervicalGraph.clear();
+
+//            cervicalData.clearValues();
+
+//            cervicalData.addDataSet(cervicalDataSet1);
+//            cervicalData.addDataSet(cervicalDataSet2);
+//            cervicalData.addDataSet(cervicalDataSet);
+//            cervicalData.addDataSet(descendDataSet);
+        cervicalData = new LineData(cervicalDataSets);
+
+        cervicalGraph.setData(cervicalData);
+//            cervicalGraph.setData(descendData);
+        cervicalGraph.invalidate();
+        okSound.start();
+
+    }
+
+    private void printListCervical() {
+        for(Entry e: cervicalList){
+            Log.i("CervicalList", "printListCervical: "+e.toString());
+        }
     }
 
     private void updateChart4(int yVal){
@@ -1638,7 +1663,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 
         if(maternalPointsAdded == false)
         {
-            maternalHelper.deleteAll();
+            myHelper.deleteAll("maternalGraph");
         }
 
         if((yVal < 60) || (yVal > 180)){
@@ -1647,7 +1672,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
             return;
         }
 
-        maternalHelper.insertData(maternalX, yVal);
+        myHelper.insertData(maternalX, yVal, "maternalGraph   ");
 
         maternalDataSet.clear();
 
@@ -1674,7 +1699,11 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         ArrayList<Entry> dp = new ArrayList<>();
         String [] columns = {"xValues","yValues"};
 
-        Cursor cursor = fetalDB.query("MyGraph", columns, null, null, null, null, "xValues ASC");
+        Cursor cursor = sqLiteDatabase.query("fetalGraph", columns, null, null, null, null, "xValues ASC");
+
+        Log.i("FetalGetData", "getData1: "+ cursor.getCount());
+        if(cursor.getCount() == 0)
+            return dp;
 
         for(int i=0; i<cursor.getCount(); i++)
         {
@@ -1688,8 +1717,11 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         ArrayList<Entry> dp = new ArrayList<>();
         String [] columns = {"xValues","yValues"};
 
-        Cursor cursor = cervicalDB.query("MyGraph", columns, null, null, null, null, "xValues ASC");
+        Cursor cursor = sqLiteDatabase.query("cervicalGraph", columns, null, null, null, null, "xValues ASC");
 
+        Log.i("CervicalGetData", "getData2: "+ cursor.getCount());
+        if(cursor.getCount() == 0)
+            return dp;
         for(int i=0; i<cursor.getCount(); i++)
         {
             cursor.moveToNext();
@@ -1702,7 +1734,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         ArrayList<Entry> dp = new ArrayList<>();
         String [] columns = {"xValues","yValues"};
 
-        Cursor cursor = maternalDB.query("MyGraph", columns, null, null, null, null, "xValues ASC");
+        Cursor cursor = sqLiteDatabase.query("maternalGraph", columns, null, null, null, null, "xValues ASC");
 
         for(int i=0; i<cursor.getCount(); i++)
         {
@@ -1716,8 +1748,11 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         ArrayList<Entry> dp = new ArrayList<>();
         String [] columns = {"xValues","yValues"};
 
-        Cursor cursor = descendDB.query("MyGraph", columns, null, null, null, null, "xValues ASC");
+        Cursor cursor = sqLiteDatabase.query("descendGraph", columns, null, null, null, null, "xValues ASC");
 
+        Log.i("DescendGetData", "getData5: "+ cursor.getCount());
+        if(cursor.getCount() == 0)
+            return dp;
         for(int i=0; i<cursor.getCount(); i++)
         {
             cursor.moveToNext();
@@ -1756,7 +1791,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         if (searchName.equals(KWS_SEARCH))
             recognizer.startListening(searchName);
         else
-            recognizer.startListening(searchName, 10000);
+            recognizer.startListening(searchName, 5000);
 
     }
 

@@ -140,10 +140,10 @@ public class FetalHeartRate extends Fragment {
 
                 if(pointsAdded == false)
                 {
-                    myHelper.deleteAll();
+                    myHelper.deleteAll("fetal");
                 }
 
-                myHelper.insertData(xVal, yVal);
+                myHelper.insertData(xVal, yVal, "fetalGraph");
 
                 fetalDataSet.clear();
 
@@ -179,7 +179,7 @@ public class FetalHeartRate extends Fragment {
                 fetalData.removeDataSet(fetalDataSet);
                 fetalGraph.setData(fetalData);
                 fetalGraph.invalidate();
-                myHelper.deleteAll();
+                myHelper.deleteAll("fetal");
                 xInput.setText(Integer.toString(0));
                 yInput.setText("");
             }
@@ -234,7 +234,7 @@ public class FetalHeartRate extends Fragment {
         fetalData.removeDataSet(fetalDataSet);
         fetalGraph.setData(fetalData);
         fetalGraph.invalidate();
-        myHelper.deleteAll();
+        myHelper.deleteAll("fetal");
         xInput.setText(Integer.toString(0));
         yInput.setText("");
     }

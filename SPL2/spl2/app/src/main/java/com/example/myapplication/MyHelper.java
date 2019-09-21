@@ -2,10 +2,8 @@ package com.example.myapplication;
 
 import android.content.ContentValues;
 import android.content.Context;
-import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.os.strictmode.SqliteObjectLeakedViolation;
 import android.widget.Toast;
 
 public class MyHelper extends SQLiteOpenHelper {
@@ -19,8 +17,24 @@ public class MyHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        String createTable = "create table MyGraph (xValues INTEGER, yValues INTEGER)";
-        db.execSQL(createTable);
+        String createTable1 = "create table if not exists fetalGraph (xValues INTEGER, yValues INTEGER)";
+        db.execSQL(createTable1);
+
+        String createTable2 = "create table if not exists cervicalGraph (xValues INTEGER, yValues INTEGER)";
+        db.execSQL(createTable2);
+
+        String createTable3 = "create table if not exists descendGraph (xValues INTEGER, yValues INTEGER)";
+        db.execSQL(createTable3);
+
+        String createTable4 = "create table if not exists contractionGraph (xValues INTEGER, yValues INTEGER)";
+        db.execSQL(createTable4);
+
+        String createTable5 = "create table if not exists maternalGraph (xValues INTEGER, yValues INTEGER)";
+        db.execSQL(createTable5);
+
+        String createTable6 = "create table if not exists pressureGraph (xValues INTEGER, yValues1 INTEGER, yValues2 INTEGER)";
+        db.execSQL(createTable6);
+
         Toast.makeText(con,"Table Created", Toast.LENGTH_LONG).show();
     }
 
@@ -29,20 +43,20 @@ public class MyHelper extends SQLiteOpenHelper {
 
     }
 
-    public void insertData(int x, int y) {
+    public void insertData(int x, int y, String graph) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put("xValues", x);
         contentValues.put("yValues", y);
 
-        db.insert("MyGraph", null, contentValues);
+        db.insert(graph, null, contentValues);
 
         Toast.makeText(con, "Data inserted", Toast.LENGTH_LONG).show();
     }
 
-    public void deleteAll() {
+    public void deleteAll(String table) {
         SQLiteDatabase db = this.getWritableDatabase();
-        db.delete("MyGraph",null,null);
+        db.delete(table,null,null);
 
     }
 

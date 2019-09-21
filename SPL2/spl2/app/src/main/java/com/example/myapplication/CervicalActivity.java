@@ -140,10 +140,10 @@ public class CervicalActivity extends Fragment {
 
                 if(pointsAdded == false)
                 {
-                    myHelper.deleteAll();
+                    myHelper.deleteAll("fetal");
                 }
 
-                myHelper.insertData(xVal, yVal);
+                myHelper.insertData(xVal, yVal, "fetalGraph");
 
                 cervicalDataSet.clear();
 
@@ -184,7 +184,7 @@ public class CervicalActivity extends Fragment {
                 cervicalData.removeDataSet(cervicalDataSet);
                 cervicalGraph.setData(cervicalData);
                 cervicalGraph.invalidate();
-                myHelper.deleteAll();
+                myHelper.deleteAll("fetal");
                 xInput.setText(Integer.toString(0));
                 yInput.setText("");
             }
@@ -239,7 +239,7 @@ public class CervicalActivity extends Fragment {
         cervicalData.removeDataSet(cervicalDataSet);
         cervicalGraph.setData(cervicalData);
         cervicalGraph.invalidate();
-        myHelper.deleteAll();
+        myHelper.deleteAll("fetal");
         xInput.setText(Integer.toString(0));
         yInput.setText("");
     }
