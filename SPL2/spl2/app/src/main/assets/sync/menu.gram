@@ -2,11 +2,11 @@
 
 grammar menu;
 
-public <menu> = <option> ((<graphs1>[<tens2>][<tens>][<digits>][<digits2>])|(<graphs2> <digits> [plus])|(fluid status <fluids>)|(pressure [<tens2>][<tens>][<digits>][<digits2>] and [<tens2>][<tens>][<digits>][<digits2>])|(contraction <digits> seconds [<tensContraction>][<digits>][<digits2>]));
+public <menu> = <option> ((<graphs1>[<tens2>][<tens>][<digits>][<digits2>])|(cervical dilatation <digitsCervical> centimeter)|(<graphs2> <digitsPlus> [plus])|(amniotic fluid <fluids>)|(contraction [<tensContraction>][<digits>][<digits2>] seconds <digits> (times | time))|(temperature [<tens2>][<tens>][<digits>][<digits2>] [point <digits>] degree (centigrade | fahrenheit)));
 
-<option> = insert;
+<option> = input;
 
-<graphs1> = maternal | fetal| cervical | head descend | temperature | oxytocin amount | oxytocin drops | amount;
+<graphs1> = maternal pulse | fetal heart rate| head descend five by | oxytocin amount | oxytocin drops | amount;
 
 <graphs2> = protean | acetone | moulding;
 
@@ -26,8 +26,7 @@ public <menu> = <option> ((<graphs1>[<tens2>][<tens>][<digits>][<digits2>])|(<gr
          thirty  |
          forty  |
          fifty  |
-         sixty  |
-         seventy;
+         sixty;
 
 <digits> = zero  |
           one   |
@@ -51,4 +50,22 @@ public <menu> = <option> ((<graphs1>[<tens2>][<tens>][<digits>][<digits2>])|(<gr
           eighteen  |
           nineteen;
 
-<fluids> = i | c | m | a | b;
+<fluids> = i | c | m | b;
+
+<digitsPlus> = absent |
+          one   |
+          two   |
+          three ;
+
+ <digitsCervical> = one   |
+           two   |
+           three |
+           four  |
+           five  |
+           six   |
+           seven |
+           eight |
+           nine  |
+           ten;
+
+/*(pressure [<tens2>][<tens>][<digits>][<digits2>] and [<tens2>][<tens>][<digits>][<digits2>])*/

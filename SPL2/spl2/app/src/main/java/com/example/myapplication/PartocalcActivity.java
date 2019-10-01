@@ -11,7 +11,12 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.graphics.Point;
+import android.media.AudioFormat;
+import android.media.AudioRecord;
 import android.media.MediaPlayer;
+import android.media.MediaRecorder;
+import android.media.MicrophoneInfo;
+import android.media.audiofx.NoiseSuppressor;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.speech.tts.TextToSpeech;
@@ -96,7 +101,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 
     private static final String KWS_SEARCH = "wakeup";
     private static final String MENU_SEARCH = "menu";
-    private static final String KEYPHRASE = "hey start";
+    private static final String KEYPHRASE = "hey mobile";
 
     private LineChart fetalGraph, cervicalGraph, maternalGraph;
     private BarChart contractionGraph;
@@ -140,8 +145,8 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
     SQLiteDatabase fetalDB, cervicalDB, contractionDB, maternalDB, descendDB,sqLiteDatabase;
 
     private boolean fetalPointsAdded = false , cervicalPointsAdded = false, contractionPointsAdded = false, maternalPointsAdded = false, descendPointAdded = false;
-    private String[] charts = {"fetal", "cervical", "contraction", "maternal", "head descend","fluid status","moulding","oxytocin amount", "oxytocin drops","temperature","protean","acetone","amount"};
-    private String[] commands = {"insert", "delete"};
+    private String[] charts = {"fetal heart rate", "cervical dilatation", "contraction", "maternal pulse", "head descend five by","amniotic fluid","moulding","oxytocin amount", "oxytocin drops","temperature","protean","acetone","amount"};
+    private String[] commands = {"input", "delete"};
     private HashMap<String,Chart> chartHashMap;
     private int[] counters = {0,0,0,0};
     private String[] xAxisCervical = new String[24];
@@ -150,6 +155,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
     private String[] hundreds = {"hundred"};
     private String[] digits = {"zero", "one", "two", "three", "four", "five", "six",
             "seven", "eight", "nine", "ten"};
+    private String[] digitsPlus = {"absent", "one", "two", "three"};
     private String[] teens = {"eleven", "twelve", "thirteen", "fourteen", "fifteen",
             "sixteen", "seventeen", "eighteen", "nineteen"};
 
@@ -165,6 +171,12 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
     private LinearLayout medicineLayout;
 
     private TableRow tableRow, fluidRow;
+    private AudioRecord audioRecord;
+    private List<MicrophoneInfo> microphoneInfos = new ArrayList<>();
+
+    private static final int RECORDER_SAMPLERATE = 8000;
+    private static final int RECORDER_CHANNELS = AudioFormat.CHANNEL_IN_MONO;
+    private static final int RECORDER_AUDIO_ENCODING = AudioFormat.ENCODING_PCM_16BIT;
 
 
     @Override
@@ -219,7 +231,13 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         });
 
         setupBluetooth();
+        audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC,
+                RECORDER_SAMPLERATE, RECORDER_CHANNELS,
+                RECORDER_AUDIO_ENCODING, 2024);
+        int x = audioRecord.getAudioSessionId();
 
+        NoiseSuppressor.create(x);
+        Log.i("audioSession", "AfterBluetooth: "+x);
         getScreenDimension();
 
         createHelper();
@@ -233,7 +251,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 
         okSound = MediaPlayer.create(getApplicationContext(),R.raw.right);
         invalidSound = MediaPlayer.create(getApplicationContext(), R.raw.case_closed);
-//        initializeTextToSpeech();
+        initializeTextToSpeech();
         runRecognizerSetup();
 
 //        mSectionsPageAdapter = new SectionsPageAdapter(getSupportFragmentManager());
@@ -569,7 +587,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         tableRow.setLayoutParams(layoutParamsTableRow);
         TextView label_date = new TextView(getApplicationContext());
         label_date.setText("");
-        label_date.setTextSize(getResources().getDimension(R.dimen.cell_text_size));
+        label_date.setTextSize(10);
         this.tableRow.addView(label_date);
         this.tableRow.setTag("yolo");
         tableAdd.addView(tableRow);
@@ -920,9 +938,9 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
             recognizer.cancel();
             recognizer.shutdown();
         }
-        if(bluetoothHeadset != null)
-            bluetoothHeadset.stopVoiceRecognition(btDevice);
-        bluetoothAdapter.closeProfileProxy(BluetoothProfile.HEADSET,bluetoothHeadset);
+            if(bluetoothHeadset != null)
+                bluetoothHeadset.stopVoiceRecognition(btDevice);
+            bluetoothAdapter.closeProfileProxy(BluetoothProfile.HEADSET,bluetoothHeadset);
     }
 
     @Override
@@ -945,7 +963,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 //        ((TextView) findViewById(R.id.result_text)).setText(hypothesis.getHypstr());
         if (hypothesis != null) {
             Toast.makeText(getApplicationContext(), hypothesis.getHypstr(), Toast.LENGTH_LONG).show();
-            if(hypothesis.getHypstr().contains("insert")){
+            if(hypothesis.getHypstr().contains("input")){
                 String s = getChart(hypothesis.getHypstr());
                 String s2 = getNumber(hypothesis.getHypstr());
 
@@ -958,8 +976,11 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
                     int yVal = convertWordsToNum(s2);
                     updateChart1(yVal);
                     scrollView.smoothScrollTo(0, fetalGraph.getTop()-100);
+//                    speak("fetal heart rate "+s2+" inserted");
                 }
                 else if(s.equals(charts[1])){
+                    s2 = s2.replace("centimeter","");
+                    s2 = s2.trim();
                     if(!checkNumberValidity(s2)){
                         Toast.makeText(getApplicationContext(), "invalid input", Toast.LENGTH_LONG).show();
                         invalidSound.start();
@@ -1022,13 +1043,48 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
                     scrollView.smoothScrollTo(0,oxytocinLayout.getTop()-100);
                 }
                 else if(s.equals(charts[9])){
-                    if(!checkNumberValidity(s2)){
-                        Toast.makeText(getApplicationContext(), "invalid input", Toast.LENGTH_LONG).show();
-                        invalidSound.start();
-                        return;
+                    s2 = s2.replace("degree","");
+                    int local = 0;
+                    if(s2.contains("centigrade"))
+                        local = 1;
+                    else
+                        local = 2;
+                    s2 = s2.replace("centigrade","");
+                    s2 = s2.replace("fahrenheit","");
+
+                    s2 = s2.trim();
+
+                    double yVal = 0.0;
+                    if(s2.contains("point")){
+                        String beforePoint = s2.substring(0,s2.indexOf("point"));
+                        if(!checkNumberValidity(beforePoint)){
+                            Toast.makeText(getApplicationContext(), "invalid input", Toast.LENGTH_LONG).show();
+                            invalidSound.start();
+                            return;
+                        }
+                        int beforeInt = convertWordsToNum(beforePoint);
+
+                        String afterPoint = s2.substring(s2.indexOf("point"),s2.length());
+                        if(!checkNumberValidity(afterPoint)){
+                            Toast.makeText(getApplicationContext(), "invalid input", Toast.LENGTH_LONG).show();
+                            invalidSound.start();
+                            return;
+                        }
+                        int afterInt = convertWordsToNum(afterPoint);
+                        yVal = beforeInt + afterInt/10.0;
                     }
-                    int yVal = convertWordsToNum(s2);
-                    updateChart9(yVal);
+                    else{
+                        if(!checkNumberValidity(s2)){
+                            Toast.makeText(getApplicationContext(), "invalid input", Toast.LENGTH_LONG).show();
+                            invalidSound.start();
+                            return;
+                        }
+                        int temp = convertWordsToNum(s2);
+                        yVal = (double) temp;
+                    }
+
+
+                    updateChart9(yVal,local);
                     scrollView.smoothScrollTo(0,tempLayout.getTop()-100);
                 }
                 else if(s.equals(charts[10])){
@@ -1048,6 +1104,13 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
                     int yVal = convertWordsToNum(s2);
                     updateChart12(yVal);
                     scrollView.smoothScrollTo(0,urineLayout.getTop()-100);
+                }
+                else{
+                    if(!checkNumberValidity(s2)){
+                        Toast.makeText(getApplicationContext(), "invalid input", Toast.LENGTH_LONG).show();
+                        invalidSound.start();
+                        return;
+                    }
                 }
             }
         }
@@ -1070,18 +1133,18 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         TableRow temp = (TableRow) tableRow.getChildAt(acetoneX);
         TextView tempText = (TextView) temp.getChildAt(0);
         String ans = null;
-        if(yVal.contains(digits[0])){
+        if(yVal.contains(digitsPlus[0])){
             ans = "0";
         }
-        else if(yVal.contains(digits[1]))
+        else if(yVal.contains(digitsPlus[1]))
         {
             ans = "+";
         }
-        else if(yVal.contains(digits[2]))
+        else if(yVal.contains(digitsPlus[2]))
         {
             ans = "++";
         }
-        else if(yVal.contains(digits[3]))
+        else if(yVal.contains(digitsPlus[3]))
         {
             ans = "+++";
         }
@@ -1102,18 +1165,18 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         TableRow temp = (TableRow) tableRow.getChildAt(proteanX);
         TextView tempText = (TextView) temp.getChildAt(0);
         String ans = null;
-        if(yVal.contains(digits[0])){
+        if(yVal.contains(digitsPlus[0])){
             ans = "0";
         }
-        else if(yVal.contains(digits[1]))
+        else if(yVal.contains(digitsPlus[1]))
         {
             ans = "+";
         }
-        else if(yVal.contains(digits[2]))
+        else if(yVal.contains(digitsPlus[2]))
         {
             ans = "++";
         }
-        else if(yVal.contains(digits[3]))
+        else if(yVal.contains(digitsPlus[3]))
         {
             ans = "+++";
         }
@@ -1128,13 +1191,17 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         okSound.start();
     }
 
-    private void updateChart9(int yVal) {
+    private void updateChart9(double yVal, int local) {
         tableRow = (TableRow) temperature.getChildAt(0);
 
         TableRow temp = (TableRow) tableRow.getChildAt(tempX);
         TextView tempText = (TextView) temp.getChildAt(0);
-        tempText.setText(Integer.toString(yVal));
-
+        if(local == 1){
+            tempText.setText(Double.toString(yVal)+" C");
+        }
+        else{
+            tempText.setText(Double.toString(yVal)+" F");
+        }
         tempX++;
         okSound.start();
     }
@@ -1167,18 +1234,18 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         TableRow temp = (TableRow) tableRow.getChildAt(mouldingX);
         TextView tempText = (TextView) temp.getChildAt(0);
         String ans = null;
-        if(yVal.contains(digits[0])){
+        if(yVal.contains(digitsPlus[0])){
             ans = "0";
         }
-        else if(yVal.contains(digits[1]))
+        else if(yVal.contains(digitsPlus[1]))
         {
             ans = "+";
         }
-        else if(yVal.contains(digits[2]))
+        else if(yVal.contains(digitsPlus[2]))
         {
             ans = "++";
         }
-        else if(yVal.contains(digits[3]))
+        else if(yVal.contains(digitsPlus[3]))
         {
             ans = "+++";
         }
@@ -1347,12 +1414,14 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
             invalidSound.start();
             return;
         }
-        int yVal = convertWordsToNum(yValString);
-        Log.i("value", "updateChart3: " + yVal);
+        int seconds = convertWordsToNum(yValString);
+        Log.i("value", "updateChart3: " + seconds);
 
         int lastIn = s2.length();
         String secondsPhrase = s2.substring(last,lastIn);
         String secondsNumber = secondsPhrase.replace("seconds", "");
+        secondsNumber = secondsNumber.replace("times","");
+        secondsNumber = secondsNumber.replace("time","");
         String valueSeconds = secondsNumber.trim();
         if(!checkNumberValidity(valueSeconds)){
             Log.i("valueSeconds", "updateChart3: "+valueSeconds+"hello");
@@ -1360,10 +1429,10 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
             invalidSound.start();
             return;
         }
-        int seconds = convertWordsToNum(valueSeconds);
-        Log.i("seconds", "updateChart3: " + seconds);
+        int yVal = convertWordsToNum(valueSeconds);
+        Log.i("seconds", "updateChart3: " + yVal);
 
-        if((yVal < 2) || (yVal > 5)){
+        if((yVal < 1) || (yVal > 5)){
             Toast.makeText(getApplicationContext(),"Input out of Contraction range", Toast.LENGTH_LONG).show();
             invalidSound.start();
             invalidSound.start();
@@ -1425,6 +1494,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
             ans = ans.replace(s,"");
         }
         String result = ans.trim();
+
         return result;
     }
 
@@ -1791,7 +1861,7 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         if (searchName.equals(KWS_SEARCH))
             recognizer.startListening(searchName);
         else
-            recognizer.startListening(searchName, 5000);
+            recognizer.startListening(searchName, 10000);
 
     }
 
@@ -1800,8 +1870,8 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
         // of different kind and switch between them
 
         recognizer = SpeechRecognizerSetup.defaultSetup()
-                .setAcousticModel(new File(assetsDir, "en-us-ptm"))
-                .setDictionary(new File(assetsDir, "cmudict-en-us.dict"))
+                .setAcousticModel(new File(assetsDir, "en_in.cd_cont_5000"))
+                .setDictionary(new File(assetsDir, "en_in.dic"))
 
 //                .setRawLogDir(assetsDir) // To disable logging of raw audio comment out this call (takes a lot of space on the device)
 
@@ -1862,7 +1932,10 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
                     finish();
                 } else {
                     tts.setLanguage(Locale.US);
-                    speak("Hello there, I am ready to start our conversation");
+                    tts.setSpeechRate(0.3f);
+                    speak("Hello there, I");
+                    speak("am ready to");
+                    speak("start our conversation");
                 }
             }
         });

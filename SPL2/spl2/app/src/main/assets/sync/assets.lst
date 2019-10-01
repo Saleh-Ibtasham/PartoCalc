@@ -9,5 +9,16 @@ en-us-ptm/noisedict
 en-us-ptm/sendump
 en-us-ptm/transition_matrices
 en-us-ptm/variances
+en-us.lm.bin
+en_in.cd_cont_5000/feat.params
+en_in.cd_cont_5000/feature_transform
+en_in.cd_cont_5000/mdef
+en_in.cd_cont_5000/means
+en_in.cd_cont_5000/mixture_weights
+en_in.cd_cont_5000/noisedict
+en_in.cd_cont_5000/noisedict.save
+en_in.cd_cont_5000/transition_matrices
+en_in.cd_cont_5000/variances
+en_in.dic
 menu.gram
 weather.dmp

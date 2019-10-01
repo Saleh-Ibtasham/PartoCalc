@@ -83,58 +83,9 @@ public class PatientCreate extends AppCompatActivity {
 
                 Toast.makeText(PatientCreate.this, "Patient Created",Toast.LENGTH_LONG).show();
 
-                Intent calcActivity = new Intent(PatientCreate.this,PartocalcActivity.class);
+                Intent calcActivity = new Intent(PatientCreate.this,TestingPartograph.class);
                 startActivity(calcActivity);
                 finish();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
                 if(!TextUtils.isEmpty(patient_name) && !TextUtils.isEmpty(patient_gravida) &&!TextUtils.isEmpty(patient_hosnum)
                         &&!TextUtils.isEmpty(patient_membrane) &&!TextUtils.isEmpty(patient_para) &&!TextUtils.isEmpty(patient_hour)){

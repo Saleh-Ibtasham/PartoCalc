@@ -53,8 +53,8 @@ dependencies {
     implementation 'com.github.vikramezhil:DroidSpeech:v2.0.3'
 
     implementation 'com.evrencoskun.library:tableview:0.8.8'
-2
     implementation project(':pocketsphinx-android-5prealpha-release')
+    implementation 'commons-codec:commons-codec:1.13'
 
 
 }
