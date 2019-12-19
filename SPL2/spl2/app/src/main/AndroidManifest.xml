@@ -11,6 +11,8 @@
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.BROADCAST_STICKY"/>
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
 
     <application
         android:allowBackup="true"
@@ -19,17 +21,23 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".PassResetActivity"></activity>
+        <activity android:name=".PassResetActivity"
+            android:screenOrientation="portrait"></activity>
         <activity
             android:name=".PatientCreate"
             android:label="Create Patient"
-            android:parentActivityName=".MainActivity" />
-        <activity android:name=".AccountSettings" />
-        <activity android:name=".RegisterActivity" />
+            android:parentActivityName=".MainActivity"
+            android:screenOrientation="portrait"/>
+        <activity android:name=".AccountSettings"
+            android:screenOrientation="portrait"/>
+        <activity android:name=".RegisterActivity"
+            android:screenOrientation="portrait"/>
         <activity
             android:name="com.theartofdev.edmodo.cropper.CropImageActivity"
-            android:theme="@style/Base.Theme.AppCompat.Custom" />
-        <activity android:name=".LoginActivity" />
+            android:theme="@style/Base.Theme.AppCompat.Custom"
+            android:screenOrientation="portrait"/>
+        <activity android:name=".LoginActivity"
+            android:screenOrientation="portrait"/>
         <activity
             android:name=".PartocalcActivity"
             android:label="Generate A Graph"
@@ -40,7 +48,8 @@
             android:label="Generate A Graph"
             android:parentActivityName=".MainActivity"
             android:screenOrientation="portrait"/>
-        <activity android:name=".MainActivity">
+        <activity android:name=".MainActivity"
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

@@ -63,11 +63,15 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.vikramezhil.droidspeech.DroidSpeech;
 import com.vikramezhil.droidspeech.OnDSListener;
 
+
 import org.apache.commons.codec.EncoderException;
 import org.apache.commons.codec.language.Soundex;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -91,7 +95,7 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
     private ViewPager mViewPager;
     private Toolbar toolbar;
     private String graphId;
-    private Button cont;
+    private Button cont,notifier;
     private ScrollView scrollView,scrollViewB;
 
     private FirebaseFirestore firebaseFirestore;
@@ -116,15 +120,29 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
     private LineDataSet maternalDataSet = new LineDataSet(null,null);
 
     private ArrayList<ILineDataSet> cervicalDataSets = new ArrayList<>();
+    private ArrayList<ILineDataSet> maternalDataSets = new ArrayList<>();
+    private ArrayList<ILineDataSet> pressureDataSets = new ArrayList<>();
+    private ArrayList<PressureEntry> pressureEntries = new ArrayList<>();
     private ArrayList<Entry> cervicalList = new ArrayList<>();
     private ArrayList<Entry> descendList = new ArrayList<>();
+
+    private ArrayList<String> zoneCharts = new ArrayList<>();
 
     private LineDataSet fetalDataSet1,fetalDataSet2,cervicalDataSet1,cervicalDataSet2;
 
     private LineData fetalData, cervicalData, maternalData, descendData;
     private BarData contractionData;
 
-    private int fetalX = 0, fetalY, cervicalX = 1, cervicalY, contractionX = 0, contractionY, maternalX = 0, maternalY, descendX = 1;
+    private int fetalX = 0;
+    private int fetalY;
+    private int cervicalX = 0;
+    private int cervicalY;
+    private int contractionX = 0;
+    private int contractionY;
+    private int maternalX = 0;
+    private int maternalY;
+    private int descendX = 0;
+    private double pressureX = 0.5;
     private int fluidX=0, mouldingX=0, oxyAmX = 0, oxyDrX = 0, tempX=0, proteanX =0, acetoneX=0, amountX = 0;
 
 
@@ -136,14 +154,17 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
     private SpeechRecognizer speechRecognizer;
 
-    private MediaPlayer okSound, invalidSound;
+    private MediaPlayer okSound, invalidSound, unsafeSound;
 
     MyHelper fetalHelper,cervicalHelper,contractionHelper,maternalHelper,descendHelper,myHelper;
     SQLiteDatabase fetalDB, cervicalDB, contractionDB, maternalDB, descendDB,sqLiteDatabase;
 
-    private boolean fetalPointsAdded = false , cervicalPointsAdded = false, contractionPointsAdded = false, maternalPointsAdded = false, descendPointAdded = false;
+    private boolean fetalPointsAdded = false , cervicalPointsAdded = false, contractionPointsAdded = false, maternalPointsAdded = false, descendPointAdded = false,
+            pressurePointAdded = false, partoGraphInitialized = false;
+    private int initializationFlag = 0;
 //    private String[] charts = {"fetal heart rate", "cervical dilatation", "contraction", "maternal pulse", "head descend five by","amniotic fluid","moulding","oxytocin amount", "oxytocin drops","temperature","protean","acetone","amount"};
-    private String[] charts = {"fetal", "cervical", "contraction", "madonna", "descend","fluid","morning","temperature","protein","acetone","everton","urine"};
+    private String[] charts = {"fetal", "cervical", "contraction", "pulse", "descend","fluid","moulding","temperature","protein","acetone","urine","pressure"};
+    private List<ArrayList<String>> charts2 = new ArrayList<>();
     private String[] commands = {"input", "delete"};
     private HashMap<String, Chart> chartHashMap;
     private int[] counters = {0,0,0,0};
@@ -153,7 +174,7 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
     private String[] hundreds = {"hundred"};
     private String[] digits = {"zero", "one", "two", "three", "four", "five", "six",
             "seven", "eight", "nine", "ten"};
-    private String[] digitsPlus = {"absent", "one", "two", "three"};
+    private String[] digitsPlus = {"absent", "1", "2", "3"};
     private String[] teens = {"eleven", "twelve", "thirteen", "fourteen", "fifteen",
             "sixteen", "seventeen", "eighteen", "nineteen"};
 
@@ -181,9 +202,14 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
     private String LOG_TAG = "VoiceRecognitionActivity";
     private String context = "command";
     private AudioManager am;
+    private boolean isInputOk = false;
 
     private String graphingChart=null;
     private int selectedChart=-1;
+
+    private SimpleDateFormat sdf = new SimpleDateFormat("hh:mm a");
+
+    private PreviousEntry previousEntry = null;
 
     private void resetSpeechRecognizer() {
 
@@ -221,6 +247,9 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 //        firebaseFirestore = FirebaseFirestore.getInstance();
 
         toolbar = (Toolbar) findViewById(R.id.partoToolBar);
+        notifier = (Button) findViewById(R.id.notifier);
+        notifier.setBackgroundColor(getResources().getColor(R.color.notifier_green));
+//        toolbar.setTitleTextColor(getResources().getColor(R.color.titlecolor));
         setSupportActionBar(toolbar);
         getSupportActionBar().setTitle("Create Graph");
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -245,6 +274,7 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         tempLayout = findViewById(R.id.temp_container);
         urineLayout = findViewById(R.id.urine_container);
 
+        createGraphArrays();
         scrollView.getViewTreeObserver().addOnScrollChangedListener(new ViewTreeObserver.OnScrollChangedListener() {
             @Override
             public void onScrollChanged() {
@@ -271,8 +301,9 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
         NoiseSuppressor.create(x);
         Log.i("audioSession", "AfterBluetooth: " + x);
-        getScreenDimension();
 
+
+        getScreenDimension();
         createHelper();
         createFetal();
         createCervical();
@@ -284,6 +315,7 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
         okSound = MediaPlayer.create(getApplicationContext(), R.raw.right);
         invalidSound = MediaPlayer.create(getApplicationContext(), R.raw.case_closed);
+        unsafeSound = MediaPlayer.create(getApplicationContext(), R.raw.yellow);
 
         resetSpeechRecognizer();
         initializeTextToSpeech();
@@ -291,8 +323,50 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
         am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 //        am.setStreamMute(AudioManager.STREAM_MUSIC,true);
+        am.setMode(AudioManager.MODE_IN_COMMUNICATION);
+        am.startBluetoothSco();
+        am.setBluetoothScoOn(true);
 
         speech.startListening(recognizerIntent);
+    }
+
+    private void createGraphArrays() {
+        String[] fetal = new String[]{"fetal","eagle","peter"};//,"beetle","petal","pital","fiddle","feudal","sheetal"
+        ArrayList<String> tempList = new ArrayList<>(Arrays.asList(fetal));
+        charts2.add(tempList);
+        String[] fluid = new String[]{"fluid","sweet","floyd"}; //,"free","sleep"
+        tempList = new ArrayList<>(Arrays.asList(fluid));
+        charts2.add(tempList);
+        String[] moudling = new String[]{"moulding","morning","monday"};
+        tempList = new ArrayList<>(Arrays.asList(moudling));
+        charts2.add(tempList);
+        String[] cervical = new String[]{"cervical","sorry","salvia","send","so"};
+        tempList = new ArrayList<>(Arrays.asList(cervical));
+        charts2.add(tempList);
+        String[] descend = new String[]{"descend"};//,"desent","dissent","desend"
+        tempList = new ArrayList<>(Arrays.asList(descend));
+        charts2.add(tempList);
+        String[] contraction = new String[]{"contraction","construction","congestion","injection","direction"};//,"sanderson","contractor","condition"
+        tempList = new ArrayList<>(Arrays.asList(contraction));
+        charts2.add(tempList);
+        String[] pulse = new String[]{"pulse","pass","paisa","spouse"};//,"parse","parts"
+        tempList = new ArrayList<>(Arrays.asList(pulse));
+        charts2.add(tempList);
+        String[] pressure = new String[]{"pressure"};
+        tempList = new ArrayList<>(Arrays.asList(pressure));
+        charts2.add(tempList);
+        String[] temperature = new String[]{"temperature"};
+        tempList = new ArrayList<>(Arrays.asList(temperature));
+        charts2.add(tempList);
+        String[] protein = new String[]{"protein","reading","brody","loading","running"};//,"baby","body","bean","funny"
+        tempList = new ArrayList<>(Arrays.asList(protein));
+        charts2.add(tempList);
+        String[] acetone = new String[]{"acetone","epitome","evidence","sedone"};//,"austin","addedon","methadone"
+        tempList = new ArrayList<>(Arrays.asList(acetone));
+        charts2.add(tempList);
+        String[] urine = new String[]{"urine","united","using"};//,"uranus","union","haloween","youmean"
+        tempList = new ArrayList<>(Arrays.asList(urine));
+        charts2.add(tempList);
     }
 
     private void createHelper() {
@@ -317,10 +391,37 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
         createFluid();
         createTime();
+        createTimeSeries();
         createOxytocin();
         createMedicine();
         createTemp();
         createUrine();
+    }
+
+    private void createTimeSeries() {
+        tableRow = (TableRow) time.getChildAt(0);
+        int hours = 1;
+        for(int i=0;i<12;i++) {
+            TableRow temp = (TableRow) tableRow.getChildAt(i);
+            TextView tempText = (TextView) temp.getChildAt(0);
+            tempText.setText(Integer.toString(hours));
+            hours++;
+        }
+    }
+
+    private void setTimeSeries(){
+        Date date = new Date();
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        tableRow = (TableRow) time.getChildAt(1);
+        int i = cervicalX/2;
+        for(;i<12;i++){
+            TableRow temp = (TableRow) tableRow.getChildAt(i);
+            TextView tempText = (TextView) temp.getChildAt(0);
+            tempText.setText(sdf.format(date));
+            cal.add(Calendar.HOUR,1);
+            date = cal.getTime();
+        }
     }
 
     private void createFluid() {
@@ -358,7 +459,7 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         tableRow.setLayoutParams(layoutParamsTableRow);
         TextView label_date = new TextView(getApplicationContext());
         label_date.setText("");
-        label_date.setTextSize(12);
+        label_date.setTextSize(14);
         this.tableRow.addView(label_date);
         this.tableRow.setTag("yolo");
         tableAdd.addView(tableRow);
@@ -399,7 +500,7 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         tableRow.setBackground(getDrawable(R.drawable.cell_bacground));
         tableRow.setLayoutParams(layoutParamsTableRow);
         TextView label_date = new TextView(getApplicationContext());
-        label_date.setText("10:30");
+        label_date.setText("");
         label_date.setTextSize(10);
         this.tableRow.addView(label_date);
         this.tableRow.setTag("yolo");
@@ -543,7 +644,7 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         tableRow.setLayoutParams(layoutParamsTableRow);
         TextView label_date = new TextView(getApplicationContext());
         label_date.setText("");
-        label_date.setTextSize(12);
+        label_date.setTextSize(14);
         this.tableRow.addView(label_date);
         this.tableRow.setTag("yolo");
         tableAdd.addView(tableRow);
@@ -624,12 +725,14 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         fetalDataSet1.addEntry(new Entry(0,120));
         fetalDataSet1.addEntry(new Entry(24,120));
         fetalDataSet1.setColor(Color.GRAY);
+        fetalDataSet1.setDrawValues(false);
         fetalDataSet1.setLineWidth(5);
         fetalDataSet1.setLabel("lower-limit");
 
         fetalDataSet2.addEntry(new Entry(0,160));
         fetalDataSet2.addEntry(new Entry(24,160));
         fetalDataSet2.setColor(Color.GRAY);
+        fetalDataSet2.setDrawValues(false);
         fetalDataSet2.setLineWidth(5);
         fetalDataSet2.setLabel("upper-limit");
 
@@ -639,24 +742,24 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
         XAxis xAxis = fetalGraph.getXAxis();
         YAxis yAxis = fetalGraph.getAxisLeft();
-        YAxis yAxis2 = fetalGraph.getAxisRight();
+        YAxis yAxitext = fetalGraph.getAxisRight();
 
         yAxis.setLabelCount(13,true);
-        yAxis2.setLabelCount(13,true);
+        yAxitext.setLabelCount(13,true);
         xAxis.setLabelCount(25,true);
         xAxis.setAxisMaximum(24);
         yAxis.setAxisMaximum(200);
-        yAxis2.setAxisMaximum(200);
+        yAxitext.setAxisMaximum(200);
         xAxis.setAxisMinimum(0);
         yAxis.setAxisMinimum(80);
-        yAxis2.setAxisMinimum(80);
+        yAxitext.setAxisMinimum(80);
         yAxis.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
-        yAxis2.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
+        yAxitext.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
         yAxis.setGranularity(1f);
-        yAxis2.setGranularity(1f);
+        yAxitext.setGranularity(1f);
         xAxis.setGranularity(1f);
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-        yAxis2.setDrawLabels(false);
+        yAxitext.setDrawLabels(false);
 
         fetalGraph.setData(fetalData);
         fetalGraph.invalidate();
@@ -680,12 +783,14 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         cervicalDataSet1.addEntry(new Entry(12,10));
         cervicalDataSet1.setColor(Color.GREEN);
         cervicalDataSet1.setLineWidth(5);
+        cervicalDataSet1.setDrawValues(false);
         cervicalDataSet1.setLabel("Alert");
 
         cervicalDataSet2.addEntry(new Entry(8,4));
         cervicalDataSet2.addEntry(new Entry(20,10));
         cervicalDataSet2.setColor(Color.RED);
         cervicalDataSet2.setLineWidth(5);
+        cervicalDataSet2.setDrawValues(false);
         cervicalDataSet2.setLabel("Action");
 
         cervicalDataSets.add(cervicalDataSet1);
@@ -698,24 +803,24 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
         XAxis xAxis = cervicalGraph.getXAxis();
         YAxis yAxis = cervicalGraph.getAxisLeft();
-        YAxis yAxis2 = cervicalGraph.getAxisRight();
+        YAxis yAxitext = cervicalGraph.getAxisRight();
 
         yAxis.setLabelCount(13,true);
-        yAxis2.setLabelCount(13,true);
+        yAxitext.setLabelCount(13,true);
         xAxis.setLabelCount(25,true);
         xAxis.setAxisMaximum(24);
         yAxis.setAxisMaximum(12);
-        yAxis2.setAxisMaximum(12);
+        yAxitext.setAxisMaximum(12);
         xAxis.setAxisMinimum(0);
         yAxis.setAxisMinimum(0);
-        yAxis2.setAxisMinimum(0);
+        yAxitext.setAxisMinimum(0);
         yAxis.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
-        yAxis2.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
+        yAxitext.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
         yAxis.setGranularity(1f);
-        yAxis2.setGranularity(1f);
+        yAxitext.setGranularity(1f);
         xAxis.setGranularity(1f);
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-        yAxis2.setDrawLabels(false);
+        yAxitext.setDrawLabels(false);
 
         cervicalGraph.setData(cervicalData);
         cervicalGraph.invalidate();
@@ -739,24 +844,24 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
         XAxis xAxis = contractionGraph.getXAxis();
         YAxis yAxis = contractionGraph.getAxisLeft();
-        YAxis yAxis2 = contractionGraph.getAxisRight();
+        YAxis yAxitext = contractionGraph.getAxisRight();
 
         yAxis.setLabelCount(6,true);
-        yAxis2.setLabelCount(6,true);
+        yAxitext.setLabelCount(6,true);
         xAxis.setLabelCount(25,true);
         xAxis.setAxisMaximum(24);
         yAxis.setAxisMaximum(5);
-        yAxis2.setAxisMaximum(5);
+        yAxitext.setAxisMaximum(5);
         xAxis.setAxisMinimum(0);
         yAxis.setAxisMinimum(0);
-        yAxis2.setAxisMinimum(0);
+        yAxitext.setAxisMinimum(0);
         yAxis.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
-        yAxis2.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
+        yAxitext.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
         yAxis.setGranularity(1f);
-        yAxis2.setGranularity(1f);
+        yAxitext.setGranularity(1f);
         xAxis.setGranularity(1f);
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-        yAxis2.setDrawLabels(false);
+        yAxitext.setDrawLabels(false);
 
         contractionGraph.setData(contractionData);
         contractionGraph.invalidate();
@@ -772,24 +877,24 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
         XAxis xAxis = maternalGraph.getXAxis();
         YAxis yAxis = maternalGraph.getAxisLeft();
-        YAxis yAxis2 = maternalGraph.getAxisRight();
+        YAxis yAxitext = maternalGraph.getAxisRight();
 
         yAxis.setLabelCount(13,true);
-        yAxis2.setLabelCount(13,true);
+        yAxitext.setLabelCount(13,true);
         xAxis.setLabelCount(25,true);
         xAxis.setAxisMaximum(24);
         yAxis.setAxisMaximum(180);
-        yAxis2.setAxisMaximum(180);
+        yAxitext.setAxisMaximum(180);
         xAxis.setAxisMinimum(0);
         yAxis.setAxisMinimum(60);
-        yAxis2.setAxisMinimum(60);
+        yAxitext.setAxisMinimum(60);
         yAxis.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
-        yAxis2.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
+        yAxitext.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART);
         yAxis.setGranularity(1f);
-        yAxis2.setGranularity(1f);
+        yAxitext.setGranularity(1f);
         xAxis.setGranularity(1f);
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-        yAxis2.setDrawLabels(false);
+        yAxitext.setDrawLabels(false);
 
         maternalGraph.setData(maternalData);
         maternalGraph.invalidate();
@@ -822,17 +927,21 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
                 } else {
                     tts.setLanguage(Locale.US);
                     tts.setSpeechRate(1f);
-                    speak("Hello there, I am ready to start our conversation");;
+                    speak("Hello there, I am ready.");;
                 }
             }
         });
     }
 
     private void speak(String message) {
+
+        HashMap<String, String> myHashRender = new HashMap<String, String>();
+        myHashRender.put(TextToSpeech.Engine.KEY_PARAM_STREAM,
+                String.valueOf(AudioManager.STREAM_VOICE_CALL));
         if(Build.VERSION.SDK_INT >= 21){
             tts.speak(message,TextToSpeech.QUEUE_FLUSH,null,null);
         } else {
-            tts.speak(message, TextToSpeech.QUEUE_FLUSH,null);
+            tts.speak(message, TextToSpeech.QUEUE_FLUSH,myHashRender);
         }
     }
 
@@ -903,8 +1012,9 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         TextView tempText = (TextView) temp.getChildAt(0);
         tempText.setText(Integer.toString(yVal));
 
-        amountX++;
+        amountX+=2;
         okSound.start();
+        isInputOk = true;
     }
 
     private void updateChart11(String yVal) {
@@ -914,7 +1024,7 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         TextView tempText = (TextView) temp.getChildAt(0);
         String ans = null;
         if(yVal.contains(digitsPlus[0])){
-            ans = "0";
+            ans = "---";
         }
         else if(yVal.contains(digitsPlus[1]))
         {
@@ -930,13 +1040,15 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         }
         else{
             invalidSound.start();
+            speak("invalid input.");
             return;
         }
-        tempText.setTextSize(8);
+
         tempText.setText(ans);
 
         acetoneX++;
         okSound.start();
+        isInputOk = true;
     }
 
     private void updateChart10(String yVal) {
@@ -946,7 +1058,7 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         TextView tempText = (TextView) temp.getChildAt(0);
         String ans = null;
         if(yVal.contains(digitsPlus[0])){
-            ans = "0";
+            ans = "---";
         }
         else if(yVal.contains(digitsPlus[1]))
         {
@@ -962,13 +1074,15 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         }
         else{
             invalidSound.start();
+            speak("invalid input");
             return;
         }
-        tempText.setTextSize(8);
+
         tempText.setText(ans);
 
         proteanX++;
         okSound.start();
+        isInputOk = true;
     }
 
     private void updateChart9(double yVal, int local) {
@@ -976,14 +1090,26 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
         TableRow temp = (TableRow) tableRow.getChildAt(tempX);
         TextView tempText = (TextView) temp.getChildAt(0);
-        if(local == 1){
+//        if(local == 1){
+//            tempText.setText(Double.toString(yVal)+" C");
+//        }
+//        else{
+//            tempText.setText(Double.toString(yVal)+" F");
+//        }
+        if((yVal < 32.00) || ((yVal>40.00) && (yVal < 54.00))){
+            unsafeSound.start();
+        }
+        if((yVal > 32.00) && (yVal<40.00)){
             tempText.setText(Double.toString(yVal)+" C");
         }
-        else{
+        else if((yVal > 90.00) && (yVal<103.00))
             tempText.setText(Double.toString(yVal)+" F");
+        else{
+            Toast.makeText(getApplicationContext(),"Temperature not normal",Toast.LENGTH_LONG).show();
         }
         tempX++;
         okSound.start();
+        isInputOk = true;
     }
 
     private void updateChart8(int yVal) {
@@ -995,6 +1121,7 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
         oxyDrX++;
         okSound.start();
+        isInputOk = true;
     }
 
     private void updateChart7(int yVal) {
@@ -1006,6 +1133,7 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
         oxyAmX++;
         okSound.start();
+        isInputOk = true;
     }
 
     private void updateChart6(String yVal) {
@@ -1014,58 +1142,85 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         TableRow temp = (TableRow) tableRow.getChildAt(mouldingX);
         TextView tempText = (TextView) temp.getChildAt(0);
         String ans = null;
-        if(yVal.contains(digitsPlus[0])){
+        Log.i("fluid input", "updateChart6: " + yVal);
+        if(yVal.equalsIgnoreCase(digitsPlus[0])){
             ans = "0";
         }
-        else if(yVal.contains(digitsPlus[1]))
+        else if(yVal.equalsIgnoreCase(digitsPlus[1]))
         {
             ans = "+";
         }
-        else if(yVal.contains(digitsPlus[2]))
+        else if(yVal.equalsIgnoreCase(digitsPlus[2]))
         {
             ans = "++";
         }
-        else if(yVal.contains(digitsPlus[3]))
+        else if(yVal.equalsIgnoreCase(digitsPlus[3]))
         {
             ans = "+++";
         }
         else{
             invalidSound.start();
+            speak("invalid input");
             return;
         }
-        tempText.setTextSize(8);
+
+        tempText.setTextSize(12);
         tempText.setText(ans);
 
         mouldingX++;
         okSound.start();
+        isInputOk = true;
     }
 
-    private void updateChart5(String yVal) {
+    private void updateChart5(String yVal) throws EncoderException {
         tableRow = (TableRow) fluid.getChildAt(0);
+        String yValInserted = fuildInputCheck(yVal);
+//        if(yVal.equalsIgnoreCase("i") || yVal.equalsIgnoreCase("c") || yVal.equalsIgnoreCase("m") || yVal.equalsIgnoreCase("b")){
+        if(!yValInserted.equals("")){
+            TableRow temp = (TableRow) tableRow.getChildAt(fluidX);
+            TextView tempText = (TextView) temp.getChildAt(0);
+            tempText.setText(yValInserted.substring(0,1));
 
-        TableRow temp = (TableRow) tableRow.getChildAt(fluidX);
-        TextView tempText = (TextView) temp.getChildAt(0);
-        tempText.setText(yVal.toUpperCase());
+            Date currentTime = new Date();
+            previousEntry = new PreviousEntry("fluid",fluidX, currentTime);
 
-        fluidX++;
-        okSound.start();
+            fluidX++;
+            okSound.start();
+            isInputOk = true;
+        }
+        else{
+            speak("invalid input");
+        }
     }
 
-    private boolean checkNumberValidity(String s2) {
-        String []words = s2.split(" ");
+    private String fuildInputCheck(String yVal) throws EncoderException {
+        String []inputs = new String[]{"Intact","Color","Maconium"};
+        int x = 0, count = 0;
+        Soundex soun = new Soundex();
+        for(String  s: inputs){
+            x = soun.difference(yVal,s);
+            if(x>2){
+                return s;
+            }
+        }
+        return "";
+    }
 
-        Log.i("S2", "checkNumberValidity: "+s2);
+    private boolean checkNumberValidity(String text) {
+        String []words = text.split(" ");
+
+        Log.i("text", "checkNumberValidity: "+text);
 
 //        Toast.makeText(getApplicationContext(), "input here", Toast.LENGTH_LONG).show();
 
-        if(s2.equals("")){
+        if(text.equals("")){
             return false;
         }
         if(words.length > 4)
         {
             return false;
         }
-        String prunedNumber = pruneNumber(s2);
+        String prunedNumber = pruneNumber(text);
 
         Log.i("PrunedNumber", "checkNumberValidity: "+prunedNumber);
 
@@ -1177,39 +1332,93 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
             return true;
     }
 
-    private void updateChart3(String s2) {
+    private void updateChart3(String text) {
         contractionData.removeDataSet(contractionDataSet);
 
         if(contractionPointsAdded == false)
         {
             myHelper.deleteAll("contractionGraph");
         }
+        int last = text.indexOf("second");
 
-        int last = s2.indexOf("seconds");
-        String number = s2.substring(0,last);
-        String yValString = number.trim();
-        if(!checkNumberValidity(yValString)){
-            Log.i("yvalString", "updateChart3: "+yValString);
-            Toast.makeText(getApplicationContext(), "invalid input", Toast.LENGTH_LONG).show();
+        if(last < 0){
+            speak("Invalid input for contraction");
             invalidSound.start();
             return;
         }
-        int seconds = convertWordsToNum(yValString);
-        Log.i("value", "updateChart3: " + seconds);
+        int region = 0;
 
-        int lastIn = s2.length();
-        String secondsPhrase = s2.substring(last,lastIn);
+//        String number = "";
+//        number = text.substring(0,last);
+//        String yValString = number.trim();
+
+//        if(!checkNumberValidity(yValString)){
+//            Log.i("yvalString", "updateChart3: "+yValString);
+//            Toast.makeText(getApplicationContext(), "invalid input", Toast.LENGTH_LONG).show();
+//            invalidSound.start();
+//            return;
+//        }
+//        int seconds = convertWordsToNum(yValString);
+//        int seconds = 0;
+//        try {
+//            seconds = Integer.parseInt(yValString);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            speak("Invalid input for contraction");
+//            invalidSound.start();
+//            return;
+//        }
+//        Log.i("value", "updateChart3: " + seconds);
+        if(text.contains("less than 20 seconds") || text.contains("less than 20 second")){
+            region = 1;
+        }
+        else if(text.contains("more than 20 seconds") || text.contains("more than 20 second")){
+            region = 2;
+        }
+        else if(text.contains("more than 40 seconds") || text.contains("more than 40 second")){
+            region = 3;
+        }
+        text = text.replace("less than 20 seconds","");
+        text = text.replace("less than 20 second","");
+        text = text.replace("more than 20 seconds","");
+        text = text.replace("more than 20 second","");
+        text = text.replace("more than 40 seconds","");
+        text = text.replace("more than 40 second","");
+        text = text.trim();
+
+        int lastIn = text.length();
+        String secondsPhrase = text.substring(0,lastIn);
         String secondsNumber = secondsPhrase.replace("seconds", "");
+        secondsNumber = secondsNumber.replace("second", "");
         secondsNumber = secondsNumber.replace("times","");
         secondsNumber = secondsNumber.replace("time","");
+        secondsNumber = secondsNumber.replace("x","");
+        secondsNumber = secondsNumber.replace("X","");
         String valueSeconds = secondsNumber.trim();
-        if(!checkNumberValidity(valueSeconds)){
-            Log.i("valueSeconds", "updateChart3: "+valueSeconds+"hello");
-            Toast.makeText(getApplicationContext(), "invalid input", Toast.LENGTH_LONG).show();
-            invalidSound.start();
-            return;
+        if(valueSeconds.equalsIgnoreCase("to") || valueSeconds.equalsIgnoreCase("two") || valueSeconds.equalsIgnoreCase("tu"))
+            valueSeconds = "2";
+        if(valueSeconds.equalsIgnoreCase("free") || valueSeconds.equalsIgnoreCase("three"))
+            valueSeconds = "3";
+        if(valueSeconds.equalsIgnoreCase("four") || valueSeconds.equalsIgnoreCase("for"))
+            valueSeconds = "4";
+        if(valueSeconds.equalsIgnoreCase("five"))
+            valueSeconds = "5";
+        if(valueSeconds.equalsIgnoreCase("one"))
+            valueSeconds = "1";
+//        if(!checkNumberValidity(valueSeconds)){
+//            Log.i("valueSeconds", "updateChart3: "+valueSeconds+"hello");
+//            Toast.makeText(getApplicationContext(), "invalid input", Toast.LENGTH_LONG).show();
+//            invalidSound.start();
+//            return;
+//        }
+//        int yVal = convertWordsToNum(valueSeconds);
+        int yVal = 0;
+        try {
+            yVal = Integer.parseInt(valueSeconds);
+        } catch (Exception e) {
+            e.printStackTrace();
+            speak("Invalid input for contraction");
         }
-        int yVal = convertWordsToNum(valueSeconds);
         Log.i("seconds", "updateChart3: " + yVal);
 
         if((yVal < 1) || (yVal > 5)){
@@ -1221,18 +1430,22 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
         myHelper.insertData(contractionX, yVal, "contractionGraph");
 
-        if(contractionDataSet == null)
+        if(contractionDataSet == null){
             contractionDataSet = new BarDataSet(getBarData(),"bardata");
+            contractionDataSet.setDrawValues(false);
+        }
+
+
         else{
             contractionDataSet.clear();
             contractionDataSet.setValues(getBarData());
         }
 
-        if(seconds > 40)
+        if(region == 3)
             barColors.add(getResources().getColor(R.color.contraction3));
-        else if((seconds <= 40) && (seconds >= 20))
+        else if(region == 2)
             barColors.add(getResources().getColor(R.color.contraction2));
-        else if(seconds < 20)
+        else if(region == 1)
             barColors.add(getResources().getColor(R.color.contraction1));
 
         contractionData.setBarWidth(1f);
@@ -1249,6 +1462,7 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
         contractionX += 1;
         okSound.start();
+        isInputOk = true;
     }
 
     private List<BarEntry> getBarData() {
@@ -1375,6 +1589,45 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         return finalResult;
     }
 
+    private void zoneMonitor(String graph, int xValue, int yValue) {
+        boolean alert = false;
+        if(graph.equals("cervical")){
+            alert = checkCervicalForYellow(xValue,yValue);
+            if(!zoneCharts.contains(graph) && alert)
+                zoneCharts.add(graph);
+            if(!alert)
+                zoneCharts.remove("cervical");
+        }
+        else if(graph.equals("fetal")){
+            alert = checkFetalForYellow(yValue);
+            if(!zoneCharts.contains(graph) && alert)
+                zoneCharts.add(graph);
+            if(!alert)
+                zoneCharts.remove("fetal");
+        }
+
+        if(alert)
+            notifier.setBackgroundColor(getResources().getColor(R.color.notifier_yellow));
+        if(zoneCharts.isEmpty())
+            notifier.setBackgroundColor(getResources().getColor(R.color.notifier_green));
+
+    }
+
+    private boolean checkFetalForYellow(int yValue) {
+        if((yValue > 160) || (yValue < 120))
+            return true;
+        else
+            return false;
+    }
+
+    private boolean checkCervicalForYellow(int xValue, int yValue) {
+        int x = xValue - 2*yValue + 8;
+        if(x>0)
+            return true;
+        else
+            return false;
+    }
+
     private void updateChart1(int yVal) {
         fetalData.removeDataSet(fetalDataSet);
 
@@ -1385,47 +1638,52 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
         if((yVal < 80) || (yVal > 200)){
             Toast.makeText(getApplicationContext(),"Input out of Fetal heart rate range", Toast.LENGTH_LONG).show();
+            speak("Input out of Fetal heart rate range");
             invalidSound.start();
             return;
         }
 
+        if((yVal < 110) || (yVal > 160)){
+            Toast.makeText(getApplicationContext(),"Input out of Fetal heart rate safezone", Toast.LENGTH_LONG).show();
+            unsafeSound.start();
+        }
+        zoneMonitor("fetal",fetalX,yVal);
         myHelper.insertData(fetalX, yVal,"fetalGraph");
 
-        fetalDataSet.clear();
-
-        fetalDataSet.setValues(getData1());
-        fetalDataSet.setLabel("Readings");
-        fetalDataSet.setDrawCircles(true);
-        fetalDataSet.setDrawCircleHole(true);
-        fetalDataSet.setCircleColor(Color.CYAN);
-        fetalDataSet.setCircleRadius(6);
-        fetalDataSet.setCircleHoleRadius(3);
-
-        fetalData.addDataSet(fetalDataSet);
-        fetalGraph.clear();
-        fetalGraph.setData(fetalData);
-        fetalGraph.invalidate();
+        loadFetal();
 
         fetalPointsAdded = true;
 
-        fetalX += 4;
+        Date currentDate = new Date();
+        previousEntry = new PreviousEntry("fetalGraph", fetalX, currentDate);
+
+        fetalX += 1;
         okSound.start();
+        isInputOk = true;
 
     }
     //    https://brightinventions.pl/blog/charts-on-android-2/
     private void updateChart2(int yVal, int x){
         if(x == 1){
 
-            if(cervicalPointsAdded == false)
+            if(!cervicalPointsAdded)
             {
+                if((initializationFlag == 1) && updateEveryX(yVal)){
+                    initializationFlag = 2;
+                    partoGraphInitialized = true;
+                    setTimeSeries();
+                }
                 myHelper.deleteAll("cervicalGraph");
+                if(!descendPointAdded)
+                    myHelper.deleteAll("descendGraph");
             }
 
-            if((yVal < 0) || (yVal > 10)){
+            if((yVal < 4) || (yVal > 10)){
                 Toast.makeText(getApplicationContext(),"Input out of cervical dialation range", Toast.LENGTH_LONG).show();
                 invalidSound.start();
                 return;
             }
+            zoneMonitor("cervical", cervicalX, yVal);
             myHelper.insertData(cervicalX, yVal, "cervicalGraph");
 
 //            Entry newEntry = new Entry(cervicalX,yVal);
@@ -1435,14 +1693,16 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 //
 //            printListCervical();
             cervicalPointsAdded = true;
-            cervicalX += 4;
+            cervicalX += 8;
         }
         else{
             cervicalData.removeDataSet(descendDataSet);
 
-            if(descendPointAdded == false)
+            if(!descendPointAdded)
             {
                 myHelper.deleteAll("descendGraph");
+                if(!cervicalPointsAdded)
+                    myHelper.deleteAll("cervicalGraph");
             }
 
             if((yVal < 1) || (yVal > 5)){
@@ -1460,6 +1720,7 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         cervicalDataSet = new LineDataSet(getData2(),"Cervical Dialation");
         cervicalDataSet.setDrawCircles(true);
         cervicalDataSet.setDrawCircleHole(true);
+        cervicalDataSet.setDrawValues(false);
         cervicalDataSet.setCircleColor(Color.CYAN);
         cervicalDataSet.setCircleRadius(7);
         cervicalDataSet.setCircleHoleRadius(2);
@@ -1470,7 +1731,9 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         descendDataSet.setLabel("Foetal Head Readings");
         descendDataSet.setDrawCircles(true);
         descendDataSet.setDrawCircleHole(true);
+        descendDataSet.setDrawValues(false);
         descendDataSet.setCircleColor(R.color.descend);
+        descendDataSet.setColor(R.color.descend);
         descendDataSet.setCircleRadius(7);
         descendDataSet.setCircleHoleRadius(2);
 
@@ -1499,7 +1762,104 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 //            cervicalGraph.setData(descendData);
         cervicalGraph.invalidate();
         okSound.start();
+        isInputOk = true;
 
+    }
+
+    private boolean updateEveryX(int yVal) {
+        if((yVal < 4) || (yVal > 10)){
+            return false;
+        }
+        else{
+            if(yVal == 5){
+                cervicalX = 2;
+                fetalX = 2;
+                descendX = 2;
+                contractionX = 2;
+                maternalX = 2;
+                pressureX = 1.5;
+                fluidX = 2;
+                mouldingX = 2;
+                tempX = 1;
+                proteanX = 1;
+                acetoneX = 1;
+                amountX = 1;
+            }
+            else if(yVal == 6){
+                cervicalX = 4;
+                fetalX = 4;
+                descendX = 4;
+                contractionX = 4;
+                maternalX = 4;
+                pressureX = 3.5;
+                fluidX = 4;
+                mouldingX = 4;
+                tempX = 2;
+                proteanX = 2;
+                acetoneX = 2;
+                amountX = 2;
+
+            }
+            else if(yVal == 7){
+                cervicalX = 6;
+                fetalX = 6;
+                descendX = 6;
+                contractionX = 6;
+                maternalX = 6;
+                pressureX = 5.5;
+                fluidX = 6;
+                mouldingX = 6;
+                tempX = 3;
+                proteanX = 3;
+                acetoneX = 3;
+                amountX = 3;
+
+            }
+            else if(yVal == 8){
+                cervicalX = 8;
+                fetalX = 8;
+                descendX = 8;
+                contractionX = 8;
+                maternalX = 8;
+                pressureX = 7.5;
+                fluidX = 8;
+                mouldingX = 8;
+                tempX = 4;
+                proteanX = 4;
+                acetoneX = 4;
+                amountX = 4;
+
+            }
+            else if(yVal == 9){
+                cervicalX = 10;
+                fetalX = 10;
+                descendX = 10;
+                contractionX = 10;
+                maternalX = 10;
+                pressureX = 9.5;
+                fluidX = 10;
+                mouldingX = 10;
+                tempX = 5;
+                proteanX = 5;
+                acetoneX = 5;
+                amountX = 5;
+            }
+            else if(yVal == 10){
+                cervicalX = 12;
+                fetalX = 12;
+                descendX = 12;
+                contractionX = 12;
+                maternalX = 12;
+                pressureX = 11.5;
+                fluidX = 12;
+                mouldingX = 12;
+                tempX = 6;
+                proteanX = 6;
+                acetoneX = 6;
+                amountX = 6;
+            }
+            return true;
+        }
     }
 
     private void printListCervical() {
@@ -1508,41 +1868,117 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         }
     }
 
-    private void updateChart4(int yVal){
+    private void updateChart4(int yVal, int i){
         maternalData.removeDataSet(maternalDataSet);
+        if(i == 1){
+            if(!maternalPointsAdded)
+            {
+                myHelper.deleteAll("maternalGraph");
+                if(!pressurePointAdded)
+                    myHelper.deleteAll("pressureGraph");
+            }
 
-        if(maternalPointsAdded == false)
-        {
-            myHelper.deleteAll("maternalGraph");
+            if((yVal < 50) || (yVal > 110)){
+                Toast.makeText(getApplicationContext(),"Input out of Patient heart rate range", Toast.LENGTH_LONG).show();
+                invalidSound.start();
+                return;
+            }
+
+
+            if((yVal < 60) || (yVal > 100)){
+                Toast.makeText(getApplicationContext(),"Input out of Patient heart rate safezone", Toast.LENGTH_LONG).show();
+                unsafeSound.start();
+            }
+            myHelper.insertData(maternalX, yVal, "maternalGraph");
+
+            maternalPointsAdded = true;
+
+            maternalX += 1;
+        }
+        else if(i == 2){
+            if(!pressurePointAdded){
+                myHelper.deleteAll("pressureGraph");
+                if(!maternalPointsAdded)
+                    myHelper.deleteAll("maternalGraph");
+            }
+            int sysTol = yVal/1000;
+            int dysTol = yVal%1000;
+
+            if(sysTol < 100 || sysTol > 180){
+                Toast.makeText(getApplicationContext(),"Input out of Patient pressure safezone", Toast.LENGTH_LONG).show();
+                unsafeSound.start();
+            }
+
+            if(dysTol < 60 || dysTol > 100){
+                Toast.makeText(getApplicationContext(),"Input out of Patient pressure safezone", Toast.LENGTH_LONG).show();
+                unsafeSound.start();
+            }
+
+
+            myHelper.insertDataForPressure(pressureX,sysTol,dysTol,"pressureGraph");
+
+            pressurePointAdded = true;
+            pressureX += 8.00;
         }
 
-        if((yVal < 60) || (yVal > 180)){
-            Toast.makeText(getApplicationContext(),"Input out of Patient heart rate range", Toast.LENGTH_LONG).show();
-            invalidSound.start();
-            return;
-        }
-
-        myHelper.insertData(maternalX, yVal, "maternalGraph   ");
-
-        maternalDataSet.clear();
-
-        maternalDataSet.setValues(getData4());
-        maternalDataSet.setLabel("Readings");
+        maternalDataSet = new LineDataSet(getData4(),"Pulse Readings");
         maternalDataSet.setDrawCircles(true);
         maternalDataSet.setDrawCircleHole(true);
+        maternalDataSet.setDrawValues(false);
         maternalDataSet.setCircleColor(Color.CYAN);
         maternalDataSet.setCircleRadius(10);
         maternalDataSet.setCircleHoleRadius(5);
 
-        maternalData.addDataSet(maternalDataSet);
+        pressureEntries = getDataForPressure();
+        pressureDataSets = createPressureLines();
+
+        maternalDataSets.clear();
+
+        maternalDataSets.add(maternalDataSet);
+        maternalDataSets.addAll(pressureDataSets);
+
         maternalGraph.clear();
+
+        maternalData = new LineData(maternalDataSets);
+
         maternalGraph.setData(maternalData);
         maternalGraph.invalidate();
 
-        maternalPointsAdded = true;
-
-        maternalX += 4;
         okSound.start();
+        isInputOk = true;
+    }
+
+    private ArrayList<ILineDataSet> createPressureLines() {
+        ArrayList<ILineDataSet> dp = new ArrayList<>();
+        boolean flag = true;
+        for(PressureEntry p : pressureEntries){
+            LineDataSet temp = new LineDataSet(null, null);
+            temp.addEntry(new Entry((float) p.xInput,p.sysTol));
+            temp.addEntry(new Entry((float) p.xInput,p.dysTol));
+            if(flag){
+                temp.setLabel("Pressure");
+                flag = false;
+            }
+            temp.setCircleColor(Color.MAGENTA);
+            temp.setDrawValues(false);
+            temp.setColor(Color.MAGENTA);
+            dp.add(temp);
+        }
+        return dp;
+    }
+
+    private ArrayList<PressureEntry> getDataForPressure() {
+        ArrayList<PressureEntry> dp = new ArrayList<>();
+        String [] columns = {"xValues","yValues1","yValues2"};
+
+        Cursor cursor = sqLiteDatabase.query("pressureGraph", columns, null, null, null, null, "xValues ASC");
+
+        for(int i=0; i<cursor.getCount(); i++)
+        {
+            cursor.moveToNext();
+            dp.add(new PressureEntry(cursor.getDouble(0),cursor.getInt(1),cursor.getInt(2)));
+        }
+        return dp;
     }
 
     private ArrayList<Entry> getData1() {
@@ -1627,8 +2063,12 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
     public void onResume() {
         Log.i(LOG_TAG, "resume");
         super.onResume();
+        setupBluetooth();
         resetSpeechRecognizer();
         initializeTextToSpeech();
+        am.setMode(AudioManager.MODE_IN_COMMUNICATION);
+        am.startBluetoothSco();
+        am.setBluetoothScoOn(true);
         speech.startListening(recognizerIntent);
     }
 
@@ -1638,6 +2078,9 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         super.onPause();
         speech.stopListening();
         tts.shutdown();
+        am.setMode(AudioManager.MODE_NORMAL);
+        am.stopBluetoothSco();
+        am.setBluetoothScoOn(false);
     }
 
     @Override
@@ -1651,6 +2094,9 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         if(bluetoothHeadset != null)
             bluetoothHeadset.stopVoiceRecognition(btDevice);
         bluetoothAdapter.closeProfileProxy(BluetoothProfile.HEADSET,bluetoothHeadset);
+        am.setMode(AudioManager.MODE_NORMAL);
+        am.stopBluetoothSco();
+        am.setBluetoothScoOn(false);
     }
 
     @Override
@@ -1705,84 +2151,482 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
 
         if(context.equals("command")){
-            if(text.equals("computer") || text.equals("computers")){
+//            am.setStreamMute(AudioManager.STREAM_MUSIC,false);
+            if(text.contains("computer")){
                 Toast.makeText(getApplicationContext(),"hello initialized",Toast.LENGTH_LONG).show();
                 speak("Please name a graph");
                 this.context = "graph";
                 recognizerIntent.putExtra(EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS,15000);
+                speak("Please name a graph");
 //                returnedText.setText(text);
             }
+//            am.setStreamMute(AudioManager.STREAM_MUSIC,true);
         }
         else if(context.equals("graph")){
             String[] words = text.split(" ");
+            Toast.makeText(getApplicationContext(),"Insert Graph", Toast.LENGTH_LONG).show();
+            if(words[0].equals("nothing")){
+                this.context = "command";
+            }
+            if(words[0].equals("remove")){
+                Date currentTime = new Date();
+
+                if(previousEntry == null){
+                    Toast.makeText(getApplicationContext(),"No previous inputs have been recorded", Toast.LENGTH_LONG).show();
+                    this.context = "command";
+                }
+                else{
+                    long interval = (currentTime.getTime() - previousEntry.getDate().getTime())/1000;
+                    if(interval > 60){
+                        speak("Sorry you cannot remove your input now");
+                        Toast.makeText(getApplicationContext(),"Sorry you cannot remove your input now", Toast.LENGTH_LONG).show();
+                        this.context = "command";
+                    }
+                    else{
+                        speak("Are you sure you want to delete the previous entry?");
+                        Toast.makeText(getApplicationContext(),"Are you sure you want to delete the previous entry?", Toast.LENGTH_LONG).show();
+                        this.context = "remove";
+                    }
+                }
+
+            }
             Soundex soundex = new Soundex();
             int x=0;
             try {
-                for(String str:charts){
-                    x = soundex.difference(words[0],str);
-                    if(x>0){
-                        graphingChart = str;
-                        selectedChart = Arrays.asList(charts).indexOf(str);
+                int i = 0;
+                boolean graphFlag = false;
+                for(ArrayList<String> str:charts2){
+                    for(String s: str){
+                        x = soundex.difference(words[0],s);
+                        if(x>2){
+                            graphingChart = charts2.get(i).get(0);
+                            selectedChart = Arrays.asList(charts).indexOf(graphingChart);
 //                        selectedChart = Arrays.binarySearch(charts,str);
-                        Log.i("SelectedChart", "onResults: "+selectedChart);
-                        break;
+                            Log.i("SelectedChart", "onResults: "+graphingChart);
+                            graphFlag = true;
+                            break;
+                        }
                     }
+                    if(graphFlag == true)
+                        break;
+                    i++;
                 }
 
             } catch (EncoderException e) {
                 e.printStackTrace();
             }
-            if(x>3){
+            if((x>2) && (!words[0].equals("nothing"))){
 //                chartBox.setText(graphingChart);
 //                recognizerIntent.putExtra(EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS,10000);
-                if(graphingChart.equals("morning"))
-                    speak("moulding"+" graph selected, please insert value");
-                else
+//                if(graphingChart.equals("morning"))
+//                    speak("moulding"+" graph selected, please insert value");
+//                else
+
+                if(selectedChart == 0)
+                    scrollView.smoothScrollTo(0, fetalGraph.getTop()-100);
+                else if(selectedChart == 1)
+                    scrollView.smoothScrollTo(0, cervicalGraph.getTop()-100);
+                else if(selectedChart == 2)
+                    scrollView.smoothScrollTo(0, contractionGraph.getTop()-100);
+                else if(selectedChart == 3)
+                    scrollView.smoothScrollTo(0, maternalGraph.getTop()-100);
+                else if(selectedChart == 4)
+                    scrollView.smoothScrollTo(0, cervicalGraph.getTop()-100);
+                else if(selectedChart == 5)
+                    scrollView.smoothScrollTo(0, fluidLayout.getTop()-100);
+                else if(selectedChart == 6)
+                    scrollView.smoothScrollTo(0, fluidLayout.getTop()-100);
+                else if(selectedChart == 7)
+                    scrollView.smoothScrollTo(0, tempLayout.getTop()-100);
+                else if(selectedChart == 8)
+                    scrollView.smoothScrollTo(0, urineLayout.getTop()-100);
+                else if(selectedChart == 9)
+                    scrollView.smoothScrollTo(0, urineLayout.getTop()-100);
+                else if(selectedChart == 10)
+                    scrollView.smoothScrollTo(0, urineLayout.getTop()-100);
+                else if(selectedChart == 11)
+                    scrollView.smoothScrollTo(0, maternalGraph.getTop()-100);
+
+                if(!partoGraphInitialized){
+                    if(selectedChart != 1){
+                        Toast.makeText(getApplicationContext(),"You must enter cervical dialation 1st",Toast.LENGTH_LONG).show();
+                        this.context = "graph";
+                        speak("Enter cervical graph first");
+                    }
+                    else{
+//                        partoGraphInitialized = true;
+                        initializationFlag = 1;
+                        speak(graphingChart+" graph selected, please insert value");
+                        this.context = "number";
+                    }
+                }
+                else{
                     speak(graphingChart+" graph selected, please insert value");
-                this.context = "number";
+                    this.context = "number";
+                }
+
             }
+        }
+        else if(context.equals("remove")){
+            if(text.contains("yes")){
+                String graph = previousEntry.getGraphName();
+                int newIntX = -1;
+                double newDoubleX = -1;
+                try {
+                    newIntX = (int)previousEntry.getxValue();
+                }
+                catch (Exception e){
+                    newDoubleX = (double)previousEntry.getxValue();
+                }
+
+                if(graph.equals("fetalGraph") || graph.equals("cervicalGraph") || graph.equals("descendGraph") || graph.equals("contractionGraph") || graph.equals("maternalGraph") || graph.equals("pressureGraph")){
+                    myHelper.deleteEntry(graph);
+                    if(graph.equals("fetalGraph") && (newIntX != -1)){
+
+                        fetalX = newIntX;
+                        loadFetal();
+                        previousEntry = null;
+                    }
+                    else if(graph.equals("cervicalGraph") && (newIntX != -1)){
+                        cervicalX = newIntX;
+                    }
+                    else if(graph.equals("descendGraph") && (newIntX != -1)){
+                        descendX = newIntX;
+                    }
+                    else if(graph.equals("contractionGraph") && (newIntX != -1)){
+                        contractionX = newIntX;
+                    }
+                    else if(graph.equals("maternalGraph") && (newIntX != -1)){
+                        maternalX = newIntX;
+                    }
+                    else if(graph.equals("pressureGraph") && (newDoubleX != -1)){
+                        pressureX = newDoubleX;
+                    }
+                }
+                else{
+                    if(graph.equals("moulding") || graph.equals("temperature") || graph.equals("protean") || graph.equals("acetone") || graph.equals("amount")){
+
+                    }
+                    if(graph.equals("fluid")){
+                        TextView tempText = (TextView) ((TableRow)((TableRow) fluid.getChildAt(0)).getChildAt(newIntX)).getChildAt(0);
+                        tempText.setText("");
+                        fluidX = newIntX;
+                        previousEntry = null;
+                    }
+                }
+            }
+            else{
+                speak("waiting for your command");
+            }
+
+            this.context = "command";
         }
         else if(context.equals("number")){
 //            numberBox.setText(text);
-            if(!text.equals("i"))
-                speak("you have inserted "+text);
-            if(selectedChart == 0){
-                speak("you have inserted "+text);
-//                try {
-//                    int yVal = Integer.parseInt(text);
-//                    updateChart1(yVal);
-//
-//                } catch (EncoderException ei) {
-//                    ei.printStackTrace();
-//                }
-                if(!text.equals("i")){
-//                    int yVal = Integer.parseInt(text);
-//                    updateChart1(yVal);
-                    scrollView.smoothScrollTo(0, fetalGraph.getTop()-100);
-                }
-            }
-
-            else if(selectedChart == 5){
-                speak("you have inserted "+text);
-//                int yVal = Integer.parseInt(text);
-                updateChart5(text);
-                scrollView.smoothScrollTo(0, fluidLayout.getTop()-100);
-            }
-
-            else if(selectedChart == 6){
-
-                speak("you have inserted "+text);
-//                int yVal = Integer.parseInt(text);
-                updateChart6(text);
-                scrollView.smoothScrollTo(0, fluidLayout.getTop()-100);
-            }
-            recognizerIntent.putExtra(EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS,5000);
-            if(!text.equals("i"))
+//            am.setStreamMute(AudioManager.STREAM_MUSIC,false);
+            if(text.equals("nothing"))
                 this.context = "command";
+            else{
+                Toast.makeText(getApplicationContext(),"Graph: "+ charts[selectedChart],Toast.LENGTH_LONG).show();
+                if(initializationFlag >= 1){
+                    if(selectedChart == 1){
+
+                        speak("you have inserted "+text);
+
+                        text = text.replace("centimetre","");
+                        text = text.replace("cm","");
+                        text = text.replace("Centimetre", "");
+                        text = text.replace("CM","");
+
+                        text = text.trim();
+//                if(!checkNumberValidity(text)){
+//                    Toast.makeText(getApplicationContext(), "invalid input", Toast.LENGTH_LONG).show();
+//                    invalidSound.start();
+//                    return;
+//                }
+                        if(text.equalsIgnoreCase("to") || text.equalsIgnoreCase("two") || text.equalsIgnoreCase("tu"))
+                            text = "2";
+                        if(text.equalsIgnoreCase("free") || text.equalsIgnoreCase("three"))
+                            text = "3";
+                        if(text.equalsIgnoreCase("four") || text.equalsIgnoreCase("for"))
+                            text = "4";
+                        if(text.equalsIgnoreCase("five") || text.equalsIgnoreCase("size"))
+                            text = "5";
+                        if(text.equalsIgnoreCase("one"))
+                            text = "1";
+                        if(text.equalsIgnoreCase("sex") || text.equalsIgnoreCase("six"))
+                            text = "6";
+                        if(text.equalsIgnoreCase("seven"))
+                            text = "7";
+                        if(text.equalsIgnoreCase("eight") || text.equalsIgnoreCase("it"))
+                            text = "8";
+                        if(text.equalsIgnoreCase("nine"))
+                            text = "9";
+                        if(text.equalsIgnoreCase("ten") || text.equalsIgnoreCase("full dialation"))
+                            text = "10";
+                        int yVal = 0;
+
+                        try {
+                            yVal = Integer.parseInt(text);
+                            updateChart2(yVal,1);
+
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            speak("You must insert a number");
+                        }
+                        scrollView.smoothScrollTo(0, cervicalGraph.getTop()-100);
+
+                    }
+                }
+                if(partoGraphInitialized){
+                    if(selectedChart == 0){
+
+                        speak("you have inserted "+text);
+                        Log.i("fetalGraph", "onResults: "+ "this is talking");
+
+                        int yVal = 0;
+                        try {
+                            yVal = Integer.parseInt(text);
+                            updateChart1(yVal);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            speak("You must insert a number");
+                        }
+                        scrollView.smoothScrollTo(0, fetalGraph.getTop()-100);
+                    }
+
+                    else if(selectedChart == 2){
+
+                        speak("you have inserted "+text);
+//                int yVal = Integer.parseInt(text);
+                        updateChart3(text);
+                        scrollView.smoothScrollTo(0, contractionGraph.getTop()-100);
+
+                    }
+                    else if(selectedChart == 3){
+                        speak("you have inserted "+text);
+//                int yVal = Integer.parseInt(text);
+                        int yVal = 0;
+                        try {
+                            yVal = Integer.parseInt(text);
+                            updateChart4(yVal,1);
+
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            speak("You must insert a number");
+                        }
+
+                        scrollView.smoothScrollTo(0, maternalGraph.getTop()-100);
+                    }
+                    else if(selectedChart == 4){
+                        text = text.replace("5 by","");
+                        text = text.replace("five by","");
+                        text = text.trim();
+                        speak("you have inserted "+text);
+                        if(text.equalsIgnoreCase("to") || text.equalsIgnoreCase("two") || text.equalsIgnoreCase("tu"))
+                            text = "2";
+                        if(text.equalsIgnoreCase("free") || text.equalsIgnoreCase("three"))
+                            text = "3";
+                        if(text.equalsIgnoreCase("four") || text.equalsIgnoreCase("for"))
+                            text = "4";
+                        if(text.equalsIgnoreCase("five"))
+                            text = "5";
+                        if(text.equalsIgnoreCase("one"))
+                            text = "1";
+//                if(!checkNumberValidity(text)){
+//                    Toast.makeText(getApplicationContext(), "invalid input", Toast.LENGTH_LONG).show();
+//                    invalidSound.start();
+//                    return;
+//                }
+                        int yVal = 0;
+                        try {
+                            yVal = Integer.parseInt(text);
+                            updateChart2(yVal,2);
+
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            speak("You must insert a number");
+                        }
+                        scrollView.smoothScrollTo(0, cervicalGraph.getTop()-100);
+                    }
+                    else if(selectedChart == 5){
+                        speak("you have inserted "+text);
+//                int yVal = Integer.parseInt(text);
+                        try {
+                            updateChart5(text);
+                        } catch (EncoderException e) {
+                            e.printStackTrace();
+                        }
+                        scrollView.smoothScrollTo(0, fluidLayout.getTop()-100);
+                    }
+
+                    else if(selectedChart == 6){
+
+                        text = text.replace("plus","");
+                        text = text.replace("Plus","");
+                        text = text.replace("class","");
+                        text = text.replace("Class","");
+                        text = text.replace("+","");
+                        text = text.trim();
+
+                        if(text.equalsIgnoreCase("one"))
+                            text = "1";
+                        if(text.equalsIgnoreCase("free"))
+                            text = "3";
+                        if(text.equalsIgnoreCase("tu") || text.equalsIgnoreCase("to"))
+                            text = "2";
+
+                        Log.i("updatechart6", "onResults: " + text);
+                        speak("you have inserted "+text);
+//                int yVal = Integer.parseInt(text);
+                        updateChart6(text);
+                        scrollView.smoothScrollTo(0, fluidLayout.getTop()-100);
+                    }
+                    else if(selectedChart == 7){
+
+                        scrollView.smoothScrollTo(0,tempLayout.getTop()-100);
+                        speak("you have inserted "+text);
+                        text = text.replace("degree","");
+                        text = text.replace("degrees","");
+                        int local = 0;
+                        if(text.contains("centigrade"))
+                            local = 1;
+                        else
+                            local = 2;
+                        text = text.replace("centigrade","");
+                        text = text.replace("fahrenheit","");
+                        text = text.replace("celsius","");
+                        text = text.replace("Celsius","");
+
+                        text = text.trim();
+
+                        double yVal = 0.0;
+                        try {
+                            yVal = Double.parseDouble(text);
+                            updateChart9(yVal,local);
+
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            speak("You must insert a number");
+                        }
+
+
+                    }
+                    else if(selectedChart == 8){
+                        text = text.replace("plus","");
+                        text = text.replace("Plus","");
+                        text = text.replace("class","");
+                        text = text.replace("Class","");
+                        text = text.replace("+","");
+                        text = text.trim();
+
+                        if(text.equalsIgnoreCase("one"))
+                            text = "1";
+                        if(text.equalsIgnoreCase("free"))
+                            text = "3";
+                        if(text.equalsIgnoreCase("tu") || text.equalsIgnoreCase("to"))
+                            text = "2";
+
+                        Log.i("updatechart6", "onResults: " + text);
+                        speak("you have inserted "+text);
+//                int yVal = Integer.parseInt(text);
+                        updateChart10(text);
+                        scrollView.smoothScrollTo(0, urineLayout.getTop()-100);
+                    }
+                    else if(selectedChart == 9){
+                        text = text.replace("plus","");
+                        text = text.replace("Plus","");
+                        text = text.replace("class","");
+                        text = text.replace("Class","");
+                        text = text.replace("+","");
+                        text = text.trim();
+
+                        if(text.equalsIgnoreCase("one"))
+                            text = "1";
+                        if(text.equalsIgnoreCase("free"))
+                            text = "3";
+                        if(text.equalsIgnoreCase("tu") || text.equalsIgnoreCase("to"))
+                            text = "2";
+
+                        Log.i("updatechart6", "onResults: " + text);
+                        speak("you have inserted "+text);
+//                int yVal = Integer.parseInt(text);
+                        updateChart11(text);
+                        scrollView.smoothScrollTo(0, urineLayout.getTop()-100);
+                    }
+                    else if(selectedChart == 10){
+
+                        speak("you have inserted "+text);
+//                int yVal = Integer.parseInt(text);
+                        int yVal = 0;
+
+                        try {
+                            yVal = Integer.parseInt(text);
+                            updateChart12(yVal);
+
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            speak("You must insert a number");
+                        }
+                        scrollView.smoothScrollTo(0, urineLayout.getTop()-100);
+                    }
+                    else if(selectedChart == 11){
+                        speak("you have inserted "+text);
+//                int yVal = Integer.parseInt(text);
+
+                        String newInput = text.replace("by", "");
+                        String []pressures = newInput.split("  ");
+
+                        int yVal = 0;
+
+                        try{
+                            yVal = Integer.parseInt(pressures[0])*1000+Integer.parseInt(pressures[1]);
+                            updateChart4(yVal,2);
+                        }catch (Exception e){
+                            e.printStackTrace();
+                            speak("Invalid input");
+                        }
+
+                        scrollView.smoothScrollTo(0, maternalGraph.getTop()-100);
+                    }
+                    recognizerIntent.putExtra(EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS,5000);
+                }
+
+            }
+
+            if(isInputOk){
+                this.context = "command";
+                isInputOk = false;
+            }
+//            am.setStreamMute(AudioManager.STREAM_MUSIC,true);
         }
-        Toast.makeText(getApplicationContext(),"context "+context,Toast.LENGTH_LONG).show();
+//        Toast.makeText(getApplicationContext(),"context "+context,Toast.LENGTH_LONG).show();
         Log.i("TextNow", "Current: " + text);
+
         speech.startListening(recognizerIntent);
+    }
+
+    private void loadFetal() {
+
+        fetalDataSet.clear();
+
+        fetalDataSet.setValues(getData1());
+        fetalDataSet.setLabel("Readings");
+        fetalDataSet.setDrawCircles(true);
+        fetalDataSet.setDrawCircleHole(true);
+        fetalDataSet.setDrawValues(false);
+        fetalDataSet.setCircleColor(Color.CYAN);
+        fetalDataSet.setCircleRadius(6);
+        fetalDataSet.setCircleHoleRadius(3);
+
+        fetalData.addDataSet(fetalDataSet);
+        fetalGraph.clear();
+        fetalGraph.setData(fetalData);
+        fetalGraph.invalidate();
+
+        if(getData1().isEmpty())
+            fetalPointsAdded = false;
+
     }
 
     @Override

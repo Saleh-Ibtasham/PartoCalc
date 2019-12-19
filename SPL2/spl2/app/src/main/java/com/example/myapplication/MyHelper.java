@@ -32,7 +32,7 @@ public class MyHelper extends SQLiteOpenHelper {
         String createTable5 = "create table if not exists maternalGraph (xValues INTEGER, yValues INTEGER)";
         db.execSQL(createTable5);
 
-        String createTable6 = "create table if not exists pressureGraph (xValues INTEGER, yValues1 INTEGER, yValues2 INTEGER)";
+        String createTable6 = "create table if not exists pressureGraph (xValues REAL, yValues1 INTEGER, yValues2 INTEGER)";
         db.execSQL(createTable6);
 
         Toast.makeText(con,"Table Created", Toast.LENGTH_LONG).show();
@@ -50,7 +50,6 @@ public class MyHelper extends SQLiteOpenHelper {
         contentValues.put("yValues", y);
 
         db.insert(graph, null, contentValues);
-
         Toast.makeText(con, "Data inserted", Toast.LENGTH_LONG).show();
     }
 
@@ -60,4 +59,26 @@ public class MyHelper extends SQLiteOpenHelper {
 
     }
 
+    public void insertDataForPressure(double pressureX, int sysTol, int dysTol, String pressureGraph) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues contentValues = new ContentValues();
+        contentValues.put("xValues", pressureX);
+        contentValues.put("yValues1", sysTol);
+        contentValues.put("yValues2", dysTol);
+
+        db.insert(pressureGraph, null, contentValues);
+
+        Toast.makeText(con, "Data inserted", Toast.LENGTH_LONG).show();
+    }
+
+    public void deleteEntry(String graph) {
+        SQLiteDatabase db = this.getWritableDatabase();
+
+//        String query = "( select MAX(xValues) from "+graph + " )";
+//        db.delete(graph, "xValues = ?", new String[]{query});
+        String query = "DELETE FROM " + graph +" WHERE xValues IN(SELECT MAX(xValues) FROM " + graph+" );";
+        db.execSQL(query);
+
+
+    }
 }
