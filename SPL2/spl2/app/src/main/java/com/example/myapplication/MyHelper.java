@@ -2,8 +2,10 @@ package com.example.myapplication;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
 import android.widget.Toast;
 
 public class MyHelper extends SQLiteOpenHelper {
@@ -80,5 +82,14 @@ public class MyHelper extends SQLiteOpenHelper {
         db.execSQL(query);
 
 
+    }
+
+    public Cursor getHighestValues(String graph) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        String query = "SELECT * FROM " + graph + " WHERE xValues IN( SELECT MAX(xValues) FROM " + graph + " );";
+//        Cursor c = db.rawQuery(query,null);
+        Cursor c = db.query(graph,null,null,null,null,null,"xValues DESC","1");
+        Log.i("myhelper", "getHighestValues: " + c.toString());
+        return c;
     }
 }

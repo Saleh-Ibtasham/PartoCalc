@@ -1,17 +1,21 @@
 package com.example.myapplication;
 
 import android.Manifest;
+import android.app.DatePickerDialog;
+import android.app.TimePickerDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothHeadset;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.graphics.Point;
+import android.graphics.drawable.ColorDrawable;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
@@ -21,9 +25,11 @@ import android.media.MicrophoneInfo;
 import android.media.audiofx.NoiseSuppressor;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.PersistableBundle;
 import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
@@ -33,18 +39,33 @@ import android.util.Log;
 import android.view.Display;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
+import android.widget.Spinner;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
+import android.widget.TimePicker;
 import android.widget.Toast;
 
+import com.couchbase.lite.CouchbaseLiteException;
+import com.couchbase.lite.Database;
+import com.couchbase.lite.DatabaseConfiguration;
+import com.couchbase.lite.Document;
+import com.couchbase.lite.MutableArray;
+import com.couchbase.lite.MutableDocument;
+import com.crowdfire.cfalertdialog.CFAlertDialog;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.charts.Chart;
 import com.github.mikephil.charting.charts.LineChart;
@@ -75,6 +96,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -108,10 +130,10 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
     private BarChart contractionGraph;
     private TableLayout fluid,time,oxytocin,medicine,temperature,urine;
 
-    private int tableColumnCount;
-
 //    private List<RowHeader> liquorRowHeaderList;
 //    private List<>;
+
+    private int tableColumnCount = 0;
 
     private LineDataSet fetalDataSet = new LineDataSet(null,null);
     private LineDataSet cervicalDataSet = new LineDataSet(null,"cervical");
@@ -156,8 +178,11 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
     private MediaPlayer okSound, invalidSound, unsafeSound;
 
-    MyHelper fetalHelper,cervicalHelper,contractionHelper,maternalHelper,descendHelper,myHelper;
-    SQLiteDatabase fetalDB, cervicalDB, contractionDB, maternalDB, descendDB,sqLiteDatabase;
+    MyHelper myHelper;
+    SQLiteDatabase sqLiteDatabase;
+
+    Database db;
+    DatabaseConfiguration config;
 
     private boolean fetalPointsAdded = false , cervicalPointsAdded = false, contractionPointsAdded = false, maternalPointsAdded = false, descendPointAdded = false,
             pressurePointAdded = false, partoGraphInitialized = false;
@@ -211,6 +236,26 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
     private PreviousEntry previousEntry = null;
 
+    private  EditText admission_date, admission_time, hours, hospital_number, para, gravida,name;
+    private Spinner membrane_input;
+    private String amPm, membrane;
+
+    private DatePickerDialog.OnDateSetListener mDateSetListener;
+    private TimePickerDialog timePickerDialog;
+
+    private String bed_number;
+    private String mode;
+
+    private String document_id = "";
+
+    String [] membrane_items = new String[]{"","no","yes"};
+    List<String> membrane_items_list = Arrays.asList(membrane_items);
+
+    ArrayList<Integer> contraction_regions = new ArrayList<>();
+
+    private boolean graphSaved = false;
+    private boolean exitingGraph = false;
+
     private void resetSpeechRecognizer() {
 
         if(speech != null)
@@ -243,6 +288,23 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         super.onCreate(savedInstanceState);
         setContentView(R.layout.new_partocalc);
 
+        config = new DatabaseConfiguration();
+        try {
+            db = new Database("partoCalc",config);
+        } catch (CouchbaseLiteException e) {
+            e.printStackTrace();
+        }
+
+        Intent intent = getIntent();
+        mode = intent.getStringExtra("mode");
+
+        if(mode.equals("create")){
+            bed_number = intent.getStringExtra("bedNumber");
+        }else {
+            document_id = intent.getStringExtra("id");
+            graphSaved = true;
+        }
+
 //        graphId = getIntent().getStringExtra("graphId");
 //        firebaseFirestore = FirebaseFirestore.getInstance();
 
@@ -253,6 +315,29 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         setSupportActionBar(toolbar);
         getSupportActionBar().setTitle("Create Graph");
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
+
+        name = (EditText) findViewById(R.id.patient_name_input);
+        hospital_number = (EditText) findViewById(R.id.hospital_num_input);
+        para = (EditText) findViewById(R.id.para);
+        gravida = (EditText) findViewById(R.id.gravida);
+
+        admission_date = (EditText) findViewById(R.id.admission_date_input);
+        admission_time = (EditText) findViewById(R.id.admission_time_input);
+
+        hours = (EditText) findViewById(R.id.hours_input);
+
+
+        hours.setEnabled(false);
+        hours.setText("");
+
+
+
+        membrane_input = (Spinner) findViewById(R.id.membrane_input);
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(getApplicationContext(),android.R.layout.simple_spinner_dropdown_item,membrane_items);
+
+        membrane_input.setAdapter(adapter);
 
         int PERMISSION_ALL = 1;
         String[] PERMISSIONS = {
@@ -311,15 +396,11 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         createMaternal();
         craeteTables();
         createGraphMaps();
-//        clearDatabase();
+        clearDatabase();
 
         okSound = MediaPlayer.create(getApplicationContext(), R.raw.right);
         invalidSound = MediaPlayer.create(getApplicationContext(), R.raw.case_closed);
         unsafeSound = MediaPlayer.create(getApplicationContext(), R.raw.yellow);
-
-        resetSpeechRecognizer();
-        initializeTextToSpeech();
-        setRecogniserIntent();
 
         am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 //        am.setStreamMute(AudioManager.STREAM_MUSIC,true);
@@ -327,7 +408,305 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         am.startBluetoothSco();
         am.setBluetoothScoOn(true);
 
+
+
+        admission_date.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Calendar cal = Calendar.getInstance();
+                int year = cal.get(Calendar.YEAR);
+                int month = cal.get(Calendar.MONTH);
+                int day = cal.get(Calendar.DAY_OF_MONTH);
+
+                DatePickerDialog dialog = new DatePickerDialog(
+                        TestingPartograph.this,
+                        android.R.style.Theme_Holo_Light_Dialog_MinWidth,
+                        mDateSetListener,
+                        year,month,day);
+                dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+                dialog.show();
+            }
+        });
+
+        mDateSetListener = new DatePickerDialog.OnDateSetListener() {
+            @Override
+            public void onDateSet(DatePicker datePicker, int year, int month, int day) {
+                month = month + 1;
+
+                String date = month + "/" + day + "/" + year;
+                admission_date.setText(date);
+            }
+        };
+
+        admission_time.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Calendar calendar = Calendar.getInstance();
+                int currentHour = calendar.get(Calendar.HOUR_OF_DAY);
+                int currentMinute = calendar.get(Calendar.MINUTE);
+
+
+                timePickerDialog = new TimePickerDialog(TestingPartograph.this, new TimePickerDialog.OnTimeSetListener() {
+                    @Override
+                    public void onTimeSet(TimePicker timePicker, int hourOfDay, int minutes) {
+                        if (hourOfDay >= 12) {
+                            amPm = "PM";
+                        } else {
+                            amPm = "AM";
+                        }
+                        admission_time.setText(String.format("%02d:%02d", hourOfDay, minutes) + amPm);
+                    }
+                }, currentHour, currentMinute, false);
+
+                timePickerDialog.show();
+            }
+        });
+
+        membrane_input.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                membrane = parent.getItemAtPosition(position).toString();
+                if(parent.getItemAtPosition(position).toString().equals("yes")){
+                    if(mode.equals("create"))
+                        hours.setEnabled(true);
+                }
+                else{
+                    hours.setEnabled(false);
+                    hours.setText("");
+                }
+
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                hours.setEnabled(false);
+                hours.setText("");
+            }
+        });
+
+        if(mode.equals("edit")){
+            populateView();
+        }
+
+        resetSpeechRecognizer();
+        initializeTextToSpeech();
+        setRecogniserIntent();
         speech.startListening(recognizerIntent);
+        
+    }
+
+    private void populateView() {
+        Document doc = db.getDocument(document_id);
+
+        Log.i("populateDocument", "populateView: "+ doc.toString());
+
+        name.setEnabled(false);
+        gravida.setEnabled(false);
+        para.setEnabled(false);
+        admission_date.setEnabled(false);
+        admission_time.setEnabled(false);
+        hospital_number.setEnabled(false);
+        membrane_input.setEnabled(false);
+        hours.setEnabled(false);
+
+        name.setText(doc.getString("name"));
+        gravida.setText(doc.getString("gravida"));
+        para.setText(doc.getString("para"));
+        admission_date.setText(doc.getString("admissionDate"));
+        admission_time.setText(doc.getString("admissionTime"));
+        hospital_number.setText(doc.getString("hospitalNumber"));
+        hours.setText(doc.getString("hours"));
+        membrane_input.setSelection(membrane_items_list.indexOf(doc.getString("membrane")));
+
+        bed_number = doc.getString("bedNumber");
+
+
+        List<Object> listTimeInputs = doc.getArray("timeInputs").toList();
+        List<Object> listDescend = doc.getArray("descend").toList();
+        List<Object> listPressure = doc.getArray("pressure").toList();
+        List<Object> listProtein = doc.getArray("protein").toList();
+        List<Object> listAcetone = doc.getArray("acetone").toList();
+        List<Object> listAmount = doc.getArray("amount").toList();
+        List<Object> listFluid = doc.getArray("fluid").toList();
+
+        List<Object> listTemperature = doc.getArray("temperature").toList();
+        List<Object> listFetal = doc.getArray("fetal").toList();
+        List<Object> listCervical = doc.getArray("cervical").toList();
+        List<Object> listMoulding = doc.getArray("moulding").toList();
+        List<Object> listDrugs = doc.getArray("drugs").toList();
+        List<Object> listPulse = doc.getArray("pulse").toList();
+        List<Object> listContraction = doc.getArray("contraction").toList();
+        List<Object> listContractionRegions = doc.getArray("contractionRegions").toList();
+
+        loadFromDocument(listCervical,"cervical");
+        loadFromDocument(listFetal,"fetal");
+        loadFromDocumentContraction(listContraction,listContractionRegions,"contraction");
+        loadFromDocument(listDescend,"descend");
+        loadFromDocument(listPulse,"maternal");
+        loadFromDocumentPressure(listPressure,"pressure");
+        loadFromDocumentTables(listFluid,"fluid",0, fluid);
+        loadFromDocumentTables(listMoulding,"moulding",1, fluid);
+        loadFromDocumentTables(listTimeInputs,"timeInputs",1, time);
+        loadFromDocumentTables(listTemperature,"temperature",0, temperature);
+        loadFromDocumentTables(listProtein,"protein",0, urine);
+        loadFromDocumentTables(listAcetone,"acetone",1, urine);
+        loadFromDocumentTables(listAmount,"amount",2, urine);
+        loadFromDocumentDrugs(listDrugs, medicineLayout);
+
+//        fluid,time,temperature,urine;
+    }
+
+    private void loadFromDocumentDrugs(List<Object> list, LinearLayout medicineLayout) {
+
+        for(Object o: list){
+            HashMap<String,Object> normalMap = (HashMap<String, Object>) o;
+            int x = Integer.parseInt(normalMap.get("xValue").toString());
+            String y = normalMap.get("yValue").toString();
+            View v = medicineLayout.getChildAt(x);
+            ((EditText)v).setText(y);
+        }
+    }
+
+    private void loadFromDocumentTables(List<Object> list, String tableEntity, int row, TableLayout tableLayout) {
+
+        tableRow = (TableRow) tableLayout.getChildAt(row);
+
+        for(Object o: list){
+            HashMap<String,Object> normalMap = (HashMap<String, Object>) o;
+            int x = Integer.parseInt(normalMap.get("xValue").toString());
+            String y = normalMap.get("yValue").toString();
+            TableRow temp = (TableRow) tableRow.getChildAt(x);
+            TextView tempText = (TextView) temp.getChildAt(0);
+            tempText.setText(y);
+            if(tableEntity.equals("fluid"))
+                fluidX = x + 1;
+            if(tableEntity.equals("moulding"))
+            {
+                mouldingX = x + 1;
+                tempText.setTextSize(12);
+            }
+            if(tableEntity.equals("temperature"))
+                tempX = x + 1;
+            if(tableEntity.equals("protein"))
+                proteanX = x + 1;
+            if(tableEntity.equals("acetone"))
+                acetoneX = x + 1;
+            if(tableEntity.equals("amount"))
+                amountX = x + 1;
+        }
+    }
+
+    private void loadFromDocumentPressure(List<Object> list, String graph) {
+        String graphTable = graph + "Graph";
+
+        for(Object o: list){
+            HashMap<String,Object> normalMap = (HashMap<String, Object>) o;
+
+            Double x = Double.parseDouble(normalMap.get("xInput").toString());
+            int sysTol = Integer.parseInt(normalMap.get("sysTol").toString());
+            int dysTol = Integer.parseInt(normalMap.get("dysTol").toString());
+
+            myHelper.insertDataForPressure(x,sysTol,dysTol,graphTable);
+            pressurePointAdded = true;
+            pressureX = x+8;
+        }
+        loadMaternal();
+    }
+
+    private void loadFromDocumentContraction(List<Object> listContraction, List<Object> listContractionRegions, String graph) {
+        String graphTable = graph + "Graph";
+
+        for (int i=0; i<listContraction.size();i++){
+            HashMap<String,Object> entry = (HashMap<String, Object>) listContraction.get(i);
+            Integer region = Integer.parseInt(listContractionRegions.get(i).toString());
+
+            int x = Integer.parseInt(entry.get("x").toString());
+            int y = Integer.parseInt(entry.get("y").toString());
+            myHelper.insertData(x, y, graphTable);
+
+            if(region == 3)
+                barColors.add(getResources().getColor(R.color.contraction3));
+            else if(region == 2)
+                barColors.add(getResources().getColor(R.color.contraction2));
+            else if(region == 1)
+                barColors.add(getResources().getColor(R.color.contraction1));
+
+            contraction_regions.add(region);
+            contractionPointsAdded = true;
+            contractionX = x+1;
+
+        }
+        loadContraction();
+    }
+
+    private void loadFromDocument(List<Object> list, String graph) {
+
+        String graphTable = graph + "Graph";
+        if(graph == "cervical"){
+            initializationFlag = 1;
+        }
+
+        for(Object o: list){
+            HashMap<String,Object> normalMap = (HashMap<String, Object>) o;
+
+            int x = Integer.parseInt(normalMap.get("x").toString());
+            int y = Integer.parseInt(normalMap.get("y").toString());
+            myHelper.insertData(x, y,graphTable);
+            if(graph.equals("fetal")){
+                zoneMonitor(graph,x,y);
+                fetalPointsAdded = true;
+                fetalX = x + 1;
+            }
+            if(graph.equals("cervical")){
+                if((initializationFlag == 1) && updateEveryX(y)){
+                    initializationFlag = 2;
+                    partoGraphInitialized = true;
+                }
+                zoneMonitor(graph,x,y);
+                cervicalPointsAdded = true;
+                cervicalX = x+8;
+            }
+            if(graph.equals("descend")){
+                descendPointAdded = true;
+                descendX = x+1;
+            }
+            if(graph.equals("pulse")){
+                maternalPointsAdded = true;
+                maternalX = x+1;
+            }
+
+        }
+
+        if(graph.equals("fetal") || graph.equals("descend"))
+            loadFetal();
+        if(graph.equals("cervical"))
+            loadCervical();
+        if(graph.equals("pulse"))
+            loadMaternal();
+
+
+    }
+
+    private void clearDatabase() {
+        if(!fetalPointsAdded){
+            myHelper.deleteAll("fetalGraph");
+        }
+        if(!cervicalPointsAdded){
+            myHelper.deleteAll("cervicalGraph");
+        }
+        if(!descendPointAdded){
+            myHelper.deleteAll("descendGraph");
+        }
+        if(!contractionPointsAdded){
+            myHelper.deleteAll("contractionGraph");
+        }
+        if(!maternalPointsAdded){
+            myHelper.deleteAll("maternalGraph");
+        }
+        if(!pressurePointAdded){
+            myHelper.deleteAll("pressureGraph");
+        }
+
     }
 
     private void createGraphArrays() {
@@ -424,6 +803,14 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         }
     }
 
+    private void resetTimeSeries(){
+        tableRow = (TableRow) time.getChildAt(1);
+        for(int i=0; i<12; i++){
+            TableRow temp = (TableRow) tableRow.getChildAt(i);
+            TextView tempText = (TextView) temp.getChildAt(0);
+            tempText.setText("");
+        }
+    }
     private void createFluid() {
         fluid = new TableLayout(getApplicationContext());
         fluid.setPadding(0, 0 ,0 ,0);
@@ -463,7 +850,6 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         this.tableRow.addView(label_date);
         this.tableRow.setTag("yolo");
         tableAdd.addView(tableRow);
-        tableColumnCount++;
     }
 
     private void createTime(){
@@ -957,23 +1343,326 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
         if(id == android.R.id.home){
             onBackPressed();
-            finish();
-            return true;
-        }
-        if (id == R.id.save_graphs) {
-//            saveGraphs();
-            return true;
-        }
-        else if (id == R.id.refresh_grpahs){
-//            refreshGraphs();
-            return true;
-        }
-        else if( id == R.id.delete_graphs){
-//            deleteGraphs();
             return true;
         }
 
+        if (id == R.id.save_graphs) {
+            showConfirmationDialogue();
+            return true;
+        }
+
+        if(id == R.id.exit_graphs){
+            onBackPressed();
+            return true;
+        }
+//        else if (id == R.id.preview_graphs){
+////            refreshGraphs();
+//            return true;
+//        }
+
         return true;
+    }
+
+    private void showConfirmationDialogue() {
+
+        String CancelButtonText = "Cancel";
+        if(exitingGraph)
+            CancelButtonText = "Exit";
+
+        CFAlertDialog.Builder builder = new CFAlertDialog.Builder(this).setDialogStyle(CFAlertDialog.CFAlertStyle.ALERT);
+        builder.setTitle("Save Patient Status");
+        builder.setMessage("Do you want to save changes made to the PartoGraph?");
+        builder.addButton("Save", Color.parseColor("#ffffff"), Color.parseColor("#33cc33"),
+                CFAlertDialog.CFAlertActionStyle.POSITIVE, CFAlertDialog.CFAlertActionAlignment.JUSTIFIED, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        if(mode.equals("create"))
+                            saveGraphs();
+                        if(mode.equals("edit"))
+                            editGraphs();
+                        dialog.cancel();
+                    }
+                });
+        builder.addButton(CancelButtonText, Color.parseColor("#ffffff"), Color.parseColor("#ffffff"),
+                CFAlertDialog.CFAlertActionStyle.NEGATIVE, CFAlertDialog.CFAlertActionAlignment.JUSTIFIED, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.cancel();
+                    }
+                });
+        CFAlertDialog alertDialog = builder.show();
+        alertDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+            @Override
+            public void onCancel(DialogInterface dialog) {
+                if(exitingGraph)
+                    exitPartoGraph();
+            }
+        });
+        alertDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
+            @Override
+            public void onDismiss(DialogInterface dialog) {
+                exitingGraph = false;
+            }
+        });
+    }
+
+    private void editGraphs() {
+
+        name.setEnabled(false);
+        gravida.setEnabled(false);
+        para.setEnabled(false);
+        admission_date.setEnabled(false);
+        admission_time.setEnabled(false);
+        hospital_number.setEnabled(false);
+        membrane_input.setEnabled(false);
+        hours.setEnabled(false);
+
+        ArrayList<Entry> fetal_inputs = new ArrayList<>();
+        fetal_inputs = getData1();
+        ArrayList<Entry> cervical_inputs = new ArrayList<>();
+        cervical_inputs = getData2();
+        ArrayList<Entry> descend_inputs = new ArrayList<>();
+        descend_inputs = getData5();
+        ArrayList<PressureEntry> pressure_inputs = new ArrayList<>();
+        pressure_inputs = getDataForPressure();
+        ArrayList<Entry> pulse_inputs = new ArrayList<>();
+        pulse_inputs = getData4();
+        List <BarEntry> contraction_inputs = new ArrayList<>();
+        contraction_inputs = getBarData();
+        ArrayList <TableEntry> fluid_inputs = new ArrayList<>();
+        fluid_inputs = getTableEntries(fluid,0);
+        ArrayList <TableEntry> moulding_inputs = new ArrayList<>();
+        moulding_inputs = getTableEntries(fluid,1);
+        ArrayList <TableEntry> time_inputs = new ArrayList<>();
+        time_inputs = getTableEntries(time,1);
+        ArrayList<TableEntry> drugs = new ArrayList<>();
+        drugs = getDrugs();
+        ArrayList <TableEntry> temperature_inputs = new ArrayList<>();
+        temperature_inputs = getTableEntries(temperature,0);
+        ArrayList<TableEntry> protein_inputs = new ArrayList();
+        protein_inputs = getTableEntries(urine,0);
+        ArrayList<TableEntry> acetone_inputs = new ArrayList<>();
+        acetone_inputs = getTableEntries(urine,1);
+        ArrayList<TableEntry> amount_inputs = new ArrayList<>();
+        amount_inputs = getTableEntries(urine,2);
+
+        String status = "";
+
+        if(cervical_inputs.size() > 0){
+            if(cervical_inputs.get(cervical_inputs.size()-1).getY() >= 10.00){
+                status = "inactive";
+            }else {
+                status = "active";
+            }
+        }
+        else {
+            status = "active";
+        }
+
+        Patient patient = new Patient();
+
+        patient.setFetal(fetal_inputs);
+        patient.setCervical(cervical_inputs);
+        patient.setDescend(descend_inputs);
+        patient.setPressure(pressure_inputs);
+        patient.setPulse(pulse_inputs);
+        patient.setContraction(contraction_inputs);
+        patient.setContractionRegions(contraction_regions);
+        patient.setFluid(fluid_inputs);
+        patient.setMoulding(moulding_inputs);
+        patient.setTimeInputs(time_inputs);
+        patient.setDrugs(drugs);
+        patient.setTemperature(temperature_inputs);
+        patient.setProtein(protein_inputs);
+        patient.setAcetone(acetone_inputs);
+        patient.setAmount(amount_inputs);
+        patient.setStatus(status);
+
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String,Object> map = mapper.convertValue(patient,Map.class);
+
+        Log.i("EditedPatient", map.toString());
+        Log.i("EditedPatient", map.get("descend").toString());
+
+        Document doc = db.getDocument(document_id);
+        MutableDocument mut = doc.toMutable();
+
+        String[] keys = new String[]{"status","fetal","cervical","descend","pressure","pulse","contraction","contractionRegions","fluid","moulding","timeInputs",
+                "drugs","temperature","protein","acetone","amount"};
+        for(String key:keys){
+            mut.setValue(key,map.get(key));
+        }
+
+        try {
+            db.save(mut);
+            graphSaved = true;
+            Toast.makeText(getApplicationContext(),"Patient Status Updated",Toast.LENGTH_LONG).show();
+        } catch (CouchbaseLiteException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private void saveAsMutableArrays(Map<String, Object> map, String key, MutableDocument mut) {
+        List<Object> list = Arrays.asList(map.get(key));
+        MutableArray array = new MutableArray(list);
+
+        mut.setArray(key,array);
+        Log.i("EditedPatient", mut.getArray(key).toList().toString());
+    }
+
+    private void saveGraphs() {
+        String patient_name = "";
+        patient_name = name.getText().toString();
+        String patient_para = "";
+        patient_para = para.getText().toString();
+        String patient_gravida = "";
+        patient_gravida = gravida.getText().toString();
+        String patient_hospital_number = "";
+        patient_hospital_number = hospital_number.getText().toString();
+        String patient_admission_date = "";
+        patient_admission_date = admission_date.getText().toString();
+        String patient_admission_time = "";
+        patient_admission_time = admission_time.getText().toString();
+        String patient_hours = "";
+        patient_hours = hours.getText().toString();
+        String patient_membrane = "";
+        patient_membrane = membrane;
+
+        if(patient_name.equals("") || patient_para.equals("") || patient_gravida.equals("") || patient_hospital_number.equals("") || patient_admission_date.equals("") ||
+                patient_admission_time.equals("") || patient_membrane.equals("")){
+            Toast.makeText(getApplicationContext(),"Please Fill up all the patient information in the first section.",Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        if(patient_membrane.equals("yes") && patient_hours.equals("")){
+            Toast.makeText(getApplicationContext(),"Please Fill up all the patient information in the first section.",Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        ArrayList<Entry> fetal_inputs = new ArrayList<>();
+        fetal_inputs = getData1();
+        ArrayList<Entry> cervical_inputs = new ArrayList<>();
+        cervical_inputs = getData2();
+        ArrayList<Entry> descend_inputs = new ArrayList<>();
+        descend_inputs = getData5();
+        ArrayList<PressureEntry> pressure_inputs = new ArrayList<>();
+        pressure_inputs = getDataForPressure();
+        ArrayList<Entry> pulse_inputs = new ArrayList<>();
+        pulse_inputs = getData4();
+        List <BarEntry> contraction_inputs = new ArrayList<>();
+        contraction_inputs = getBarData();
+        ArrayList <TableEntry> fluid_inputs = new ArrayList<>();
+        fluid_inputs = getTableEntries(fluid,0);
+        ArrayList <TableEntry> moulding_inputs = new ArrayList<>();
+        moulding_inputs = getTableEntries(fluid,1);
+        ArrayList <TableEntry> time_inputs = new ArrayList<>();
+        time_inputs = getTableEntries(time,1);
+        ArrayList<TableEntry> drugs = new ArrayList<>();
+        drugs = getDrugs();
+        ArrayList <TableEntry> temperature_inputs = new ArrayList<>();
+        temperature_inputs = getTableEntries(temperature,0);
+        ArrayList<TableEntry> protein_inputs = new ArrayList();
+        protein_inputs = getTableEntries(urine,0);
+        ArrayList<TableEntry> acetone_inputs = new ArrayList<>();
+        acetone_inputs = getTableEntries(urine,1);
+        ArrayList<TableEntry> amount_inputs = new ArrayList<>();
+        amount_inputs = getTableEntries(urine,2);
+
+        String status = "";
+
+        if(cervical_inputs.size() > 0){
+            if(cervical_inputs.get(cervical_inputs.size()-1).getY() >= 10.00){
+                status = "inactive";
+            }else {
+                status = "active";
+            }
+        }
+        else {
+            status = "active";
+        }
+
+        Log.i("cervical_inputs", cervical_inputs.toString());
+        Log.i("cervical_inputs_status", "Status: " + status);
+
+
+
+        Patient patient = new Patient(patient_name,patient_gravida,patient_para,patient_hospital_number,patient_hours,patient_membrane,
+                patient_admission_date,patient_admission_time,bed_number,status);
+
+        patient.setFetal(fetal_inputs);
+        patient.setCervical(cervical_inputs);
+        patient.setDescend(descend_inputs);
+        patient.setPressure(pressure_inputs);
+        patient.setPulse(pulse_inputs);
+        patient.setContraction(contraction_inputs);
+        patient.setContractionRegions(contraction_regions);
+        patient.setFluid(fluid_inputs);
+        patient.setMoulding(moulding_inputs);
+        patient.setTimeInputs(time_inputs);
+        patient.setDrugs(drugs);
+        patient.setTemperature(temperature_inputs);
+        patient.setProtein(protein_inputs);
+        patient.setAcetone(acetone_inputs);
+        patient.setAmount(amount_inputs);
+
+//        newtask.setValue("patient",json);
+
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String,Object> map = mapper.convertValue(patient,Map.class);
+
+        MutableDocument newtask = new MutableDocument(map);
+
+        Log.i("new_document", newtask.toString());
+        String id = newtask.getId();
+
+        document_id = id;
+
+        try {
+            db.save(newtask);
+            graphSaved = true;
+            Toast.makeText(getApplicationContext(),"Patient Status Saved. Patient informations of the 1st sections are uneditable now.",Toast.LENGTH_LONG).show();
+            mode = "edit";
+        } catch (CouchbaseLiteException e) {
+            e.printStackTrace();
+        }
+
+
+//
+//        Document document = db.getDocument(id);
+//        Log.i("new_document", document.toString());
+
+    }
+
+    private ArrayList<TableEntry> getTableEntries(TableLayout tableLayout, int row) {
+        ArrayList<TableEntry> tableEntries = new ArrayList<>();
+
+        tableRow = (TableRow) tableLayout.getChildAt(row);
+
+        int childs = tableRow.getChildCount();
+
+        for(int i=0; i<childs; i++){
+            TableRow temp = (TableRow) tableRow.getChildAt(i);
+            TextView tempText = (TextView) temp.getChildAt(0);
+            String ans = tempText.getText().toString();
+            if(!ans.equals("")){
+                tableEntries.add(new TableEntry(i,ans));
+            }
+        }
+
+        return tableEntries;
+    }
+
+    private ArrayList<TableEntry> getDrugs() {
+        ArrayList<TableEntry> drugs = new ArrayList<>();
+        int childCount = medicineLayout.getChildCount();
+        for (int i = 0; i < childCount; i++) {
+            View v = medicineLayout.getChildAt(i);
+            String drug = ((EditText) v).getText().toString();
+            drugs.add(new TableEntry(i,drug));
+        }
+
+        return drugs;
     }
 
     private void deleteGraphs() {
@@ -1012,9 +1701,13 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         TextView tempText = (TextView) temp.getChildAt(0);
         tempText.setText(Integer.toString(yVal));
 
+        Date currentTime = new Date();
+        previousEntry = new PreviousEntry("amount",amountX, currentTime);
+
         amountX+=2;
         okSound.start();
         isInputOk = true;
+        graphSaved = false;
     }
 
     private void updateChart11(String yVal) {
@@ -1046,9 +1739,13 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
         tempText.setText(ans);
 
+        Date currentTime = new Date();
+        previousEntry = new PreviousEntry("acetone",acetoneX, currentTime);
+
         acetoneX++;
         okSound.start();
         isInputOk = true;
+        graphSaved = false;
     }
 
     private void updateChart10(String yVal) {
@@ -1080,9 +1777,13 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
         tempText.setText(ans);
 
+        Date currentTime = new Date();
+        previousEntry = new PreviousEntry("protean",proteanX, currentTime);
+
         proteanX++;
         okSound.start();
         isInputOk = true;
+        graphSaved = false;
     }
 
     private void updateChart9(double yVal, int local) {
@@ -1107,9 +1808,14 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         else{
             Toast.makeText(getApplicationContext(),"Temperature not normal",Toast.LENGTH_LONG).show();
         }
+
+        Date currentTime = new Date();
+        previousEntry = new PreviousEntry("temperature",tempX, currentTime);
+
         tempX++;
         okSound.start();
         isInputOk = true;
+        graphSaved = false;
     }
 
     private void updateChart8(int yVal) {
@@ -1167,9 +1873,13 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         tempText.setTextSize(12);
         tempText.setText(ans);
 
+        Date currentTime = new Date();
+        previousEntry = new PreviousEntry("moulding",mouldingX, currentTime);
+
         mouldingX++;
         okSound.start();
         isInputOk = true;
+        graphSaved = false;
     }
 
     private void updateChart5(String yVal) throws EncoderException {
@@ -1187,6 +1897,7 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
             fluidX++;
             okSound.start();
             isInputOk = true;
+            graphSaved = false;
         }
         else{
             speak("invalid input");
@@ -1369,7 +2080,7 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 //            return;
 //        }
 //        Log.i("value", "updateChart3: " + seconds);
-        if(text.contains("less than 20 seconds") || text.contains("less than 20 second")){
+        if(text.contains("under 20 seconds") || text.contains("under 20 second")){
             region = 1;
         }
         else if(text.contains("more than 20 seconds") || text.contains("more than 20 second")){
@@ -1378,8 +2089,8 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         else if(text.contains("more than 40 seconds") || text.contains("more than 40 second")){
             region = 3;
         }
-        text = text.replace("less than 20 seconds","");
-        text = text.replace("less than 20 second","");
+        text = text.replace("under 20 seconds","");
+        text = text.replace("under 20 second","");
         text = text.replace("more than 20 seconds","");
         text = text.replace("more than 20 second","");
         text = text.replace("more than 40 seconds","");
@@ -1430,23 +2141,42 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
         myHelper.insertData(contractionX, yVal, "contractionGraph");
 
-        if(contractionDataSet == null){
-            contractionDataSet = new BarDataSet(getBarData(),"bardata");
-            contractionDataSet.setDrawValues(false);
-        }
-
-
-        else{
-            contractionDataSet.clear();
-            contractionDataSet.setValues(getBarData());
-        }
-
         if(region == 3)
             barColors.add(getResources().getColor(R.color.contraction3));
         else if(region == 2)
             barColors.add(getResources().getColor(R.color.contraction2));
         else if(region == 1)
             barColors.add(getResources().getColor(R.color.contraction1));
+
+        contraction_regions.add(region);
+
+        contractionPointsAdded = true;
+
+        loadContraction();
+
+        Date currentDate = new Date();
+        previousEntry = new PreviousEntry("contractionGraph", contractionX, currentDate);
+
+        contractionX += 1;
+        okSound.start();
+        isInputOk = true;
+        graphSaved = false;
+
+    }
+
+    private void loadContraction() {
+        List<BarEntry> tempbars = getBarData();
+
+        if(contractionDataSet == null){
+            contractionDataSet = new BarDataSet(tempbars,"bardata");
+            contractionDataSet.setDrawValues(false);
+        }
+
+
+        else{
+            contractionDataSet.clear();
+            contractionDataSet.setValues(tempbars);
+        }
 
         contractionData.setBarWidth(1f);
         contractionGraph.getLegend().setEnabled(false);
@@ -1457,12 +2187,6 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         contractionGraph.setData(contractionData);
         contractionGraph.invalidate();
 
-        contractionPointsAdded = true;
-
-
-        contractionX += 1;
-        okSound.start();
-        isInputOk = true;
     }
 
     private List<BarEntry> getBarData() {
@@ -1589,7 +2313,7 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         return finalResult;
     }
 
-    private void zoneMonitor(String graph, int xValue, int yValue) {
+    private void zoneMonitor(String graph, double xValue, double yValue) {
         boolean alert = false;
         if(graph.equals("cervical")){
             alert = checkCervicalForYellow(xValue,yValue);
@@ -1613,15 +2337,15 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
     }
 
-    private boolean checkFetalForYellow(int yValue) {
+    private boolean checkFetalForYellow(double yValue) {
         if((yValue > 160) || (yValue < 120))
             return true;
         else
             return false;
     }
 
-    private boolean checkCervicalForYellow(int xValue, int yValue) {
-        int x = xValue - 2*yValue + 8;
+    private boolean checkCervicalForYellow(double xValue, double yValue) {
+        double x = xValue - 2*yValue + 8;
         if(x>0)
             return true;
         else
@@ -1647,12 +2371,13 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
             Toast.makeText(getApplicationContext(),"Input out of Fetal heart rate safezone", Toast.LENGTH_LONG).show();
             unsafeSound.start();
         }
+
         zoneMonitor("fetal",fetalX,yVal);
         myHelper.insertData(fetalX, yVal,"fetalGraph");
 
-        loadFetal();
-
         fetalPointsAdded = true;
+
+        loadFetal();
 
         Date currentDate = new Date();
         previousEntry = new PreviousEntry("fetalGraph", fetalX, currentDate);
@@ -1660,7 +2385,7 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         fetalX += 1;
         okSound.start();
         isInputOk = true;
-
+        graphSaved = false;
     }
     //    https://brightinventions.pl/blog/charts-on-android-2/
     private void updateChart2(int yVal, int x){
@@ -1693,11 +2418,13 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 //
 //            printListCervical();
             cervicalPointsAdded = true;
+
+            Date currentDate = new Date();
+            previousEntry = new PreviousEntry("cervicalGraph", cervicalX, currentDate);
+
             cervicalX += 8;
         }
         else{
-            cervicalData.removeDataSet(descendDataSet);
-
             if(!descendPointAdded)
             {
                 myHelper.deleteAll("descendGraph");
@@ -1714,10 +2441,26 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
             descendPointAdded = true;
 
+            Date currentDate = new Date();
+            previousEntry = new PreviousEntry("descendGraph", descendX, currentDate);
+
             descendX += 4;
         }
 
-        cervicalDataSet = new LineDataSet(getData2(),"Cervical Dialation");
+        loadCervical();
+
+
+        okSound.start();
+        isInputOk = true;
+        graphSaved = false;
+    }
+
+    private void loadCervical() {
+
+        ArrayList<Entry> tempCervical = getData2();
+        ArrayList<Entry> tempDescend = getData5();
+
+        cervicalDataSet = new LineDataSet(tempCervical,"Cervical Dialation");
         cervicalDataSet.setDrawCircles(true);
         cervicalDataSet.setDrawCircleHole(true);
         cervicalDataSet.setDrawValues(false);
@@ -1727,7 +2470,7 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
 
 
-        descendDataSet = new LineDataSet(getData5(),"Foetal Head Decent");
+        descendDataSet = new LineDataSet(tempDescend,"Foetal Head Decent");
         descendDataSet.setLabel("Foetal Head Readings");
         descendDataSet.setDrawCircles(true);
         descendDataSet.setDrawCircleHole(true);
@@ -1750,20 +2493,21 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
         cervicalGraph.clear();
 
-//            cervicalData.clearValues();
-
-//            cervicalData.addDataSet(cervicalDataSet1);
-//            cervicalData.addDataSet(cervicalDataSet2);
-//            cervicalData.addDataSet(cervicalDataSet);
-//            cervicalData.addDataSet(descendDataSet);
         cervicalData = new LineData(cervicalDataSets);
 
         cervicalGraph.setData(cervicalData);
-//            cervicalGraph.setData(descendData);
         cervicalGraph.invalidate();
-        okSound.start();
-        isInputOk = true;
 
+        if(tempCervical.isEmpty()){
+            cervicalPointsAdded = false;
+            initializationFlag = 0;
+            partoGraphInitialized = false;
+            resetTimeSeries();
+            resetEveryX();
+        }
+
+        if(tempDescend.isEmpty())
+            descendPointAdded = false;
     }
 
     private boolean updateEveryX(int yVal) {
@@ -1862,6 +2606,21 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         }
     }
 
+    private void resetEveryX(){
+        cervicalX = 0;
+        fetalX = 0;
+        descendX = 0;
+        contractionX = 0;
+        maternalX = 0;
+        pressureX = 0.5;
+        fluidX = 0;
+        mouldingX = 0;
+        tempX = 0;
+        proteanX = 0;
+        acetoneX = 0;
+        amountX = 0;
+    }
+
     private void printListCervical() {
         for(Entry e: cervicalList){
             Log.i("CervicalList", "printListCervical: "+e.toString());
@@ -1893,6 +2652,9 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
             maternalPointsAdded = true;
 
+            Date currentDate = new Date();
+            previousEntry = new PreviousEntry("maternalGraph", maternalX, currentDate);
+
             maternalX += 1;
         }
         else if(i == 2){
@@ -1917,17 +2679,31 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
             myHelper.insertDataForPressure(pressureX,sysTol,dysTol,"pressureGraph");
 
+            Date currentDate = new Date();
+            previousEntry = new PreviousEntry("pressureGraph", pressureX, currentDate);
+
             pressurePointAdded = true;
             pressureX += 8.00;
         }
 
-        maternalDataSet = new LineDataSet(getData4(),"Pulse Readings");
+
+        loadMaternal();
+
+        okSound.start();
+        isInputOk = true;
+        graphSaved = false;
+
+    }
+
+    private void loadMaternal() {
+        ArrayList<Entry> tempPulse = getData4();
+        maternalDataSet = new LineDataSet(tempPulse,"Pulse Readings");
         maternalDataSet.setDrawCircles(true);
         maternalDataSet.setDrawCircleHole(true);
         maternalDataSet.setDrawValues(false);
         maternalDataSet.setCircleColor(Color.CYAN);
-        maternalDataSet.setCircleRadius(10);
-        maternalDataSet.setCircleHoleRadius(5);
+        maternalDataSet.setCircleRadius(7);
+        maternalDataSet.setCircleHoleRadius(2);
 
         pressureEntries = getDataForPressure();
         pressureDataSets = createPressureLines();
@@ -1944,8 +2720,10 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         maternalGraph.setData(maternalData);
         maternalGraph.invalidate();
 
-        okSound.start();
-        isInputOk = true;
+        if(tempPulse.isEmpty())
+            maternalPointsAdded = false;
+        if(pressureDataSets.isEmpty())
+            pressurePointAdded = false;
     }
 
     private ArrayList<ILineDataSet> createPressureLines() {
@@ -2173,6 +2951,7 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
                 if(previousEntry == null){
                     Toast.makeText(getApplicationContext(),"No previous inputs have been recorded", Toast.LENGTH_LONG).show();
+                    speak("No inputs to delete now");
                     this.context = "command";
                 }
                 else{
@@ -2183,8 +2962,8 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
                         this.context = "command";
                     }
                     else{
-                        speak("Are you sure you want to delete the previous entry?");
-                        Toast.makeText(getApplicationContext(),"Are you sure you want to delete the previous entry?", Toast.LENGTH_LONG).show();
+                        speak("DO you want to delete the previous entry");
+                        Toast.makeText(getApplicationContext(),"Do you want to delete the previous entry?", Toast.LENGTH_LONG).show();
                         this.context = "remove";
                     }
                 }
@@ -2254,7 +3033,7 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
                         speak("Enter cervical graph first");
                     }
                     else{
-//                        partoGraphInitialized = true;
+
                         initializationFlag = 1;
                         speak(graphingChart+" graph selected, please insert value");
                         this.context = "number";
@@ -2284,33 +3063,115 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
                     if(graph.equals("fetalGraph") && (newIntX != -1)){
 
                         fetalX = newIntX;
+
                         loadFetal();
                         previousEntry = null;
+                        ArrayList<Entry> tempList = new ArrayList<>();
+                        tempList = getData1();
+                        Entry tempEntry;
+                        if(!tempList.isEmpty()){
+                            tempEntry = tempList.get(tempList.size()-1);
+
+                            double xValue, yValue;
+                            xValue = tempEntry.getX();
+                            yValue = tempEntry.getY();
+                            zoneMonitor("fetal", xValue,yValue);
+
+                        }
+
+//                        try {
+//                            Cursor c = myHelper.getHighestValues(graph);
+//                            values = new int[] {c.getInt(0),c.getInt(1)};
+//                            zoneMonitor("fetal", values[0],values[1]);
+//                        }catch (Exception e){
+//                            speak("there is a problem");
+//                        }
+//                        Cursor c = myHelper.getHighestValues(graph);
+//                        int index = c.getColumnIndexOrThrow("xValues");
+//                        int xValue = c.getInt(index);
+//                        index = c.getColumnIndexOrThrow("yValues");
+//                        int yValue = c.getInt(index);
+
+
                     }
                     else if(graph.equals("cervicalGraph") && (newIntX != -1)){
                         cervicalX = newIntX;
+
+                        loadCervical();
+                        previousEntry = null;
+                        ArrayList<Entry> tempList;
+
+                        tempList = getData1();
+
+                        if(!tempList.isEmpty()){
+
+                            Entry tempEntry = tempList.get(tempList.size()-1);
+
+                            double xValue, yValue;
+                            xValue = tempEntry.getX();
+                            yValue = tempEntry.getY();
+
+                            zoneMonitor("cervical", xValue,yValue);
+                        }
                     }
                     else if(graph.equals("descendGraph") && (newIntX != -1)){
                         descendX = newIntX;
+                        loadCervical();
+                        previousEntry = null;
                     }
                     else if(graph.equals("contractionGraph") && (newIntX != -1)){
                         contractionX = newIntX;
+                        if(barColors.size() > 0)
+                            barColors.remove(barColors.size()-1);
+                        loadContraction();
+                        previousEntry = null;
                     }
                     else if(graph.equals("maternalGraph") && (newIntX != -1)){
                         maternalX = newIntX;
+                        loadMaternal();
+                        previousEntry = null;
                     }
                     else if(graph.equals("pressureGraph") && (newDoubleX != -1)){
                         pressureX = newDoubleX;
+                        loadMaternal();
+                        previousEntry = null;
                     }
                 }
                 else{
-                    if(graph.equals("moulding") || graph.equals("temperature") || graph.equals("protean") || graph.equals("acetone") || graph.equals("amount")){
-
+                    if(graph.equals("moulding")){
+                        TextView tempText = (TextView) ((TableRow)((TableRow) fluid.getChildAt(1)).getChildAt(newIntX)).getChildAt(0);
+                        tempText.setText("");
+                        mouldingX = newIntX;
+                        previousEntry = null;
                     }
                     if(graph.equals("fluid")){
                         TextView tempText = (TextView) ((TableRow)((TableRow) fluid.getChildAt(0)).getChildAt(newIntX)).getChildAt(0);
                         tempText.setText("");
                         fluidX = newIntX;
+                        previousEntry = null;
+                    }
+                    if(graph.equals("temperature")){
+                        TextView tempText = (TextView) ((TableRow)((TableRow) temperature.getChildAt(0)).getChildAt(newIntX)).getChildAt(0);
+                        tempText.setText("");
+                        tempX = newIntX;
+                        previousEntry = null;
+                    }
+                    if(graph.equals("protean")){
+                        TextView tempText = (TextView) ((TableRow)((TableRow) urine.getChildAt(0)).getChildAt(newIntX)).getChildAt(0);
+                        tempText.setText("");
+                        proteanX = newIntX;
+                        previousEntry = null;
+                    }
+                    if(graph.equals("acetone")){
+                        TextView tempText = (TextView) ((TableRow)((TableRow) urine.getChildAt(1)).getChildAt(newIntX)).getChildAt(0);
+                        tempText.setText("");
+                        acetoneX = newIntX;
+                        previousEntry = null;
+                    }
+                    if(graph.equals("amount")){
+                        TextView tempText = (TextView) ((TableRow)((TableRow) urine.getChildAt(2)).getChildAt(newIntX)).getChildAt(0);
+                        tempText.setText("");
+                        amountX = newIntX;
                         previousEntry = null;
                     }
                 }
@@ -2344,7 +3205,7 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 //                    invalidSound.start();
 //                    return;
 //                }
-                        if(text.equalsIgnoreCase("to") || text.equalsIgnoreCase("two") || text.equalsIgnoreCase("tu"))
+                        if(text.equalsIgnoreCase("to") || text.equalsIgnoreCase("two") || text.equalsIgnoreCase("tu") || text.equalsIgnoreCase("too"))
                             text = "2";
                         if(text.equalsIgnoreCase("free") || text.equalsIgnoreCase("three"))
                             text = "3";
@@ -2423,7 +3284,7 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
                         text = text.replace("five by","");
                         text = text.trim();
                         speak("you have inserted "+text);
-                        if(text.equalsIgnoreCase("to") || text.equalsIgnoreCase("two") || text.equalsIgnoreCase("tu"))
+                        if(text.equalsIgnoreCase("to") || text.equalsIgnoreCase("two") || text.equalsIgnoreCase("tu") || text.equalsIgnoreCase("too"))
                             text = "2";
                         if(text.equalsIgnoreCase("free") || text.equalsIgnoreCase("three"))
                             text = "3";
@@ -2573,9 +3434,10 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
                     else if(selectedChart == 11){
                         speak("you have inserted "+text);
 //                int yVal = Integer.parseInt(text);
-
                         String newInput = text.replace("by", "");
-                        String []pressures = newInput.split("  ");
+                        newInput = newInput.trim().replaceAll("\\s+", " ");
+                        newInput = newInput.replace("/"," ");
+                        String []pressures = newInput.split(" ");
 
                         int yVal = 0;
 
@@ -2610,7 +3472,8 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
 
         fetalDataSet.clear();
 
-        fetalDataSet.setValues(getData1());
+        ArrayList<Entry> tempList = getData1();
+        fetalDataSet.setValues(tempList);
         fetalDataSet.setLabel("Readings");
         fetalDataSet.setDrawCircles(true);
         fetalDataSet.setDrawCircleHole(true);
@@ -2624,9 +3487,28 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
         fetalGraph.setData(fetalData);
         fetalGraph.invalidate();
 
-        if(getData1().isEmpty())
+        if(tempList.isEmpty())
             fetalPointsAdded = false;
 
+    }
+
+    @Override
+    public void onBackPressed(){
+        exitingGraph = true;
+        if(!graphSaved){
+            showConfirmationDialogue();
+        }
+        else{
+            exitPartoGraph();
+        }
+    }
+
+    private void exitPartoGraph() {
+        Intent intent = new Intent();
+        intent.putExtra("newDocument", document_id);
+        Log.i("giving_document_id", "onBackPressed: "+document_id);
+        setResult(RESULT_OK, intent);
+        super.onBackPressed();
     }
 
     @Override
@@ -2638,6 +3520,22 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
     public void onEvent(int i, Bundle bundle) {
         Log.i(LOG_TAG, "onEvent");
     }
+
+//    @Override
+//    public void onCreate(@Nullable Bundle savedInstanceState, @Nullable PersistableBundle persistentState) {
+//
+//        ProgressBar progressBar;
+//        progressBar = new ProgressBar(TestingPartograph.this);
+//        progressBar.set
+//        super.onCreate(savedInstanceState, persistentState);
+//    }
+
+    //    @Override
+//    public boolean onKeyUp(int keyCode, KeyEvent event) {
+//        Toast.makeText(this.getApplicationContext(),"ON key up evenfired",Toast.LENGTH_LONG).show();
+//        super.onBackPressed();
+//        return super.onKeyUp(keyCode, event);
+//    }
 
     public String getErrorText(int errorCode) {
         String message;

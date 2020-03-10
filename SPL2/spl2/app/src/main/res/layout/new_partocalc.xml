@@ -18,7 +18,8 @@
         <android.support.v7.widget.Toolbar
             android:id="@+id/partoToolBar"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            app:theme="@style/ToolbarColoredBackArrow">
 
             <android.support.v7.widget.AppCompatButton
                 android:id="@+id/notifier"
@@ -37,7 +38,7 @@
         android:layout_marginTop="5dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/containerB"
+        app:layout_constraintStart_toEndOf="@+id/containerB"
         app:layout_constraintTop_toBottomOf="@+id/appbar">
 
         <android.support.constraint.ConstraintLayout
@@ -128,14 +129,11 @@
                                 android:id="@+id/membrane_field"
                                 android:layout_width="78dp"
                                 android:layout_height="46dp"
-                                android:layout_marginStart="8dp"
-                                android:layout_marginTop="20dp"
-                                android:layout_marginEnd="8dp"
+                                android:layout_marginStart="4dp"
+                                android:layout_marginTop="28dp"
                                 android:text="Ruptured Membranes"
-                                app:layout_constraintEnd_toEndOf="parent"
-                                app:layout_constraintHorizontal_bias="0.023"
-                                app:layout_constraintStart_toEndOf="@+id/hours_input"
-                                app:layout_constraintTop_toBottomOf="@+id/hospital_num_input" />
+                                app:layout_constraintStart_toStartOf="parent"
+                                app:layout_constraintTop_toBottomOf="@+id/Hospital_number_field" />
 
                             <TextView
                                 android:id="@+id/Hospital_number_field"
@@ -154,46 +152,59 @@
                                 android:layout_marginStart="16dp"
                                 android:layout_marginTop="35dp"
                                 android:text="Hours"
-                                app:layout_constraintStart_toStartOf="parent"
-                                app:layout_constraintTop_toBottomOf="@+id/Hospital_number_field" />
+                                app:layout_constraintStart_toEndOf="@+id/membrane_input"
 
-                            <TextView
-                                android:id="@+id/status_field"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="16dp"
-                                android:layout_marginTop="40dp"
-                                android:text="Status"
-                                app:layout_constraintStart_toStartOf="parent"
-                                app:layout_constraintTop_toBottomOf="@+id/hour_field" />
+                                app:layout_constraintTop_toBottomOf="@+id/hospital_num_input"/>
 
-                            <EditText
-                                android:id="@+id/status_input"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="28dp"
-                                android:layout_marginTop="268dp"
-                                android:ems="10"
-                                android:gravity="start|top"
-                                android:inputType="textMultiLine"
-                                android:textSize="14sp"
-                                app:layout_constraintStart_toEndOf="@+id/status_field"
-                                app:layout_constraintTop_toTopOf="parent" />
+                            <!--                            <TextView-->
+                            <!--                                android:id="@+id/status_field"-->
+                            <!--                                android:layout_width="wrap_content"-->
+                            <!--                                android:layout_height="wrap_content"-->
+                            <!--                                android:layout_marginStart="16dp"-->
+                            <!--                                android:layout_marginTop="40dp"-->
+                            <!--                                android:text="Status"-->
+                            <!--                                app:layout_constraintStart_toStartOf="parent"-->
+                            <!--                                app:layout_constraintTop_toBottomOf="@+id/hour_field" />-->
 
-                            <EditText
+                            <!--                            <EditText-->
+                            <!--                                android:id="@+id/status_input"-->
+                            <!--                                android:layout_width="wrap_content"-->
+                            <!--                                android:layout_height="wrap_content"-->
+                            <!--                                android:layout_marginStart="28dp"-->
+                            <!--                                android:layout_marginTop="268dp"-->
+                            <!--                                android:ems="10"-->
+                            <!--                                android:gravity="start|top"-->
+                            <!--                                android:inputType="textMultiLine"-->
+                            <!--                                android:textSize="14sp"-->
+                            <!--                                app:layout_constraintStart_toEndOf="@+id/status_field"-->
+                            <!--                                app:layout_constraintTop_toTopOf="parent" />-->
+
+                            <!--                            <EditText-->
+                            <!--                                android:id="@+id/membrane_input"-->
+                            <!--                                android:layout_width="0dp"-->
+                            <!--                                android:layout_height="wrap_content"-->
+                            <!--                                android:layout_marginStart="8dp"-->
+                            <!--                                android:layout_marginTop="20dp"-->
+                            <!--                                android:layout_marginEnd="8dp"-->
+                            <!--                                android:ems="10"-->
+                            <!--                                android:inputType="textPersonName"-->
+                            <!--                                android:textSize="14sp"-->
+                            <!--                                app:layout_constraintHorizontal_bias="0.0"-->
+                            <!--                                app:layout_constraintStart_toEndOf="@+id/membrane_field"-->
+                            <!--                                app:layout_constraintTop_toBottomOf="@+id/hospital_num_input" />-->
+
+                            <Spinner
                                 android:id="@+id/membrane_input"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
+                                android:layout_width="168dp"
+                                android:layout_height="39dp"
                                 android:layout_marginStart="8dp"
                                 android:layout_marginTop="20dp"
-                                android:layout_marginEnd="8dp"
                                 android:ems="10"
                                 android:inputType="textPersonName"
                                 android:textSize="14sp"
-                                app:layout_constraintEnd_toEndOf="parent"
-                                app:layout_constraintHorizontal_bias="0.0"
                                 app:layout_constraintStart_toEndOf="@+id/membrane_field"
                                 app:layout_constraintTop_toBottomOf="@+id/hospital_num_input" />
+
 
                             <EditText
                                 android:id="@+id/hours_input"
@@ -202,7 +213,7 @@
                                 android:layout_marginStart="24dp"
                                 android:layout_marginTop="20dp"
                                 android:ems="10"
-                                android:inputType="textPersonName"
+                                android:inputType="number"
                                 android:textSize="14sp"
                                 app:layout_constraintStart_toEndOf="@+id/hour_field"
                                 app:layout_constraintTop_toBottomOf="@+id/hospital_num_input" />
@@ -229,7 +240,7 @@
                                 android:layout_marginTop="60dp"
                                 android:layout_marginEnd="8dp"
                                 android:ems="10"
-                                android:inputType="textPersonName"
+                                android:inputType="number"
                                 android:textSize="14sp"
                                 app:layout_constraintEnd_toEndOf="parent"
                                 app:layout_constraintHorizontal_bias="1.0"
@@ -258,7 +269,7 @@
                                 android:layout_marginTop="8dp"
                                 android:layout_marginEnd="8dp"
                                 android:ems="10"
-                                android:inputType="textPersonName"
+                                android:inputType="number"
                                 android:textSize="14sp"
                                 app:layout_constraintEnd_toEndOf="parent"
                                 app:layout_constraintHorizontal_bias="1.0"
@@ -303,7 +314,7 @@
                         android:layout_marginTop="450dp"
                         app:layout_constraintBottom_toTopOf="@+id/fluid_container"
                         app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintHorizontal_bias="1.0"
+                        app:layout_constraintHorizontal_bias="0.0"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent">
 
@@ -417,13 +428,6 @@
                             android:layout_marginEnd="0dp"
                             android:layout_marginBottom="0dp"
                             android:orientation="vertical">
-
-                            <TableLayout
-                                android:id="@+id/medicine"
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                android:layout_marginTop="0dp"
-                                android:layout_marginBottom="0dp" />
 
                         </LinearLayout>
 
@@ -840,5 +844,6 @@
         </ScrollView>
 
     </android.support.constraint.ConstraintLayout>
+
 
 </android.support.constraint.ConstraintLayout>

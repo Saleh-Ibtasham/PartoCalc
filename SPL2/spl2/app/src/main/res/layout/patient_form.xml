@@ -147,7 +147,7 @@
         android:backgroundTint="@color/colorPrimary"
         android:ems="10"
         android:hint="Para..."
-        android:inputType="text"
+        android:inputType="number"
         android:padding="10dp"
         android:textColor="@android:color/darker_gray"
         android:textColorHint="@android:color/darker_gray"

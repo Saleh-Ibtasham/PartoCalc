@@ -18,6 +18,14 @@ android {
         }
     }
     buildToolsVersion = '28.0.3'
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    packagingOptions {
+        exclude 'META-INF/LICENSE'
+    }
 }
 
 repositories {
@@ -56,6 +64,13 @@ dependencies {
     implementation project(':pocketsphinx-android-5prealpha-release')
     implementation 'commons-codec:commons-codec:1.13'
 
+    implementation 'com.couchbase.lite:couchbase-lite-android:2.7.0'
+
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.8.5'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.8.5'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.8.5'
+
+    implementation 'com.crowdfire.cfalertdialog:cfalertdialog:1.1.0'
 
 }
 

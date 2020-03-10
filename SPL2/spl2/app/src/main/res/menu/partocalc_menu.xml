@@ -6,12 +6,13 @@
     <item
         android:id="@+id/save_graphs"
         android:icon="@drawable/ic_save_black_24dp"
-        android:title="@string/calc_save_btn" />
+        android:title="@string/calc_save_btn"
+        app:showAsAction="never"/>
+<!--    <item-->
+<!--        android:id="@+id/preview_graphs"-->
+<!--        android:title="Preview Graph" />-->
     <item
-        android:id="@+id/refresh_grpahs"
-        android:title="@string/calc_refresh_btn" />
-    <item
-        android:id="@+id/delete_graphs"
+        android:id="@+id/exit_graphs"
         android:icon="@drawable/ic_power_settings_new_black_24dp"
-        android:title="@string/calc_delete_btn" />
+        android:title="Exit"/>
 </menu>

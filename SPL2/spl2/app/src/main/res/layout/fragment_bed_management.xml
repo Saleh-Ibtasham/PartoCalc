@@ -10,13 +10,13 @@
         android:id="@+id/frameLayout2"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context=".Dashboard">
+        tools:context=".BedManagement">
 
         <android.support.v7.widget.RecyclerView
-            android:id="@+id/dashboard"
+            android:id="@+id/bed_management"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            tools:listitem="@layout/bed_file_dashboard" />
+            tools:listitem="@layout/bed_file_delete" />
 
     </FrameLayout>
 
@@ -28,11 +28,12 @@
         android:layout_marginTop="650dp"
         android:clickable="true"
         android:focusable="auto"
-        android:src="@drawable/ic_add_24px"
+        android:src="@drawable/ic_delete_sweep_24px"
+        app:backgroundTint="@color/notifier_red"
         app:fabSize="auto"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:maxImageSize="30dp" />
+        app:maxImageSize="33dp" />
 
 
 </android.support.constraint.ConstraintLayout>

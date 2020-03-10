@@ -1999,15 +1999,6 @@ public class PartocalcActivity extends AppCompatActivity implements RecognitionL
 //            saveGraphs();
             return true;
         }
-        else if (id == R.id.refresh_grpahs){
-//            refreshGraphs();
-            return true;
-        }
-        else if( id == R.id.delete_graphs){
-//            deleteGraphs();
-            return true;
-        }
-
         return true;
     }
 
