@@ -4,13 +4,11 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
-        android:id="@+id/save_graphs"
+        android:id="@+id/delete_graph"
         android:icon="@drawable/ic_save_black_24dp"
-        android:title="Save Graph"
+        android:title="Delete Graph"
         app:showAsAction="never"/>
-<!--    <item-->
-<!--        android:id="@+id/preview_graphs"-->
-<!--        android:title="Preview Graph" />-->
+
     <item
         android:id="@+id/exit_graphs"
         android:icon="@drawable/ic_power_settings_new_black_24dp"

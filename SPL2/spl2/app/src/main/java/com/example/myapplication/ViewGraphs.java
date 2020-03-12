@@ -1,9 +1,7 @@
 package com.example.myapplication;
 
-import android.content.Context;
-import android.net.Uri;
+import android.content.Intent;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -11,16 +9,14 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
 import com.couchbase.lite.CouchbaseLiteException;
 import com.couchbase.lite.DataSource;
 import com.couchbase.lite.Database;
 import com.couchbase.lite.DatabaseConfiguration;
 import com.couchbase.lite.Document;
-import com.couchbase.lite.Expression;
 import com.couchbase.lite.Meta;
-import com.couchbase.lite.MutableDocument;
+import com.couchbase.lite.Ordering;
 import com.couchbase.lite.Query;
 import com.couchbase.lite.QueryBuilder;
 import com.couchbase.lite.Result;
@@ -30,25 +26,26 @@ import com.couchbase.lite.SelectResult;
 import java.util.ArrayList;
 import java.util.List;
 
-public class BedManagement extends Fragment {
+import static android.app.Activity.RESULT_OK;
 
+
+public class ViewGraphs extends Fragment {
     private RecyclerView partograph_list_view;
     private List<Patient> graph_list;
 
     private onClickInterface onclickInterface;
 
-    private BedManagementRecyclerAdapter bedRecyclerAdapter;
+    private ViewGraphsRecyclerAdaptar viewGraphsRecyclerAdaptar;
 
     DatabaseConfiguration config;
     Database db;
-    FloatingActionButton fab;
 
+    private int intermediate_position = -1;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-
-        View view = inflater.inflate(R.layout.fragment_bed_management, container, false);
+        View view = inflater.inflate(R.layout.fragment_view_graphs, container, false);
 
         config = new DatabaseConfiguration();
 
@@ -59,24 +56,17 @@ public class BedManagement extends Fragment {
         }
 
         graph_list = new ArrayList<>();
-        partograph_list_view = view.findViewById(R.id.bed_management);
-//        fab = view.findViewById(R.id.fab);
-//        fab.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                deleteAllDocuments();
-//            }
-//        });
+        partograph_list_view = view.findViewById(R.id.view_graphs);
 
         onclickInterface = new onClickInterface() {
             @Override
             public void setClick(String id, int position) {
-                graph_list.remove(position);
-                deletePatient(id);
+                intermediate_position = position;
+                viewPatient(id);
             }
         };
 
-        Query query = QueryBuilder.select(SelectResult.expression(Meta.id)).from(DataSource.database(db)).where(Expression.property("status").equalTo(Expression.string("active")));
+        Query query = QueryBuilder.select(SelectResult.expression(Meta.id)).from(DataSource.database(db)).orderBy(Ordering.property("admissionDate").descending());
 
         try {
             ResultSet rs = query.execute();
@@ -88,9 +78,9 @@ public class BedManagement extends Fragment {
                 graph_list.add(createPatient(id));
             }
 
-            bedRecyclerAdapter = new BedManagementRecyclerAdapter(graph_list,onclickInterface);
+            viewGraphsRecyclerAdaptar = new ViewGraphsRecyclerAdaptar(graph_list,onclickInterface);
             partograph_list_view.setLayoutManager(new LinearLayoutManager(container.getContext()));
-            partograph_list_view.setAdapter(bedRecyclerAdapter);
+            partograph_list_view.setAdapter(viewGraphsRecyclerAdaptar);
             partograph_list_view.setHasFixedSize(true);
 
 
@@ -103,17 +93,10 @@ public class BedManagement extends Fragment {
         return view;
     }
 
-    private void deletePatient(String id) {
-        Document document = db.getDocument(id);
-        MutableDocument mut = document.toMutable();
-        mut.setValue("status","inactive");
-        try {
-            db.save(mut);
-            Toast.makeText(getContext(),"Partograph of Patient successfully deleted",Toast.LENGTH_LONG).show();
-            bedRecyclerAdapter.notifyDataSetChanged();
-        } catch (CouchbaseLiteException e) {
-            e.printStackTrace();
-        }
+    private void viewPatient(String id) {
+        Intent patientActivity = new Intent(getContext(),ViewingPartograph.class);
+        patientActivity.putExtra("id",id);
+        startActivityForResult(patientActivity,1);
     }
 
     private Patient createPatient(String id) {
@@ -127,8 +110,27 @@ public class BedManagement extends Fragment {
         return patient;
     }
 
-    private void deleteAllDocuments() {
-        Toast.makeText(getContext(),"This feature is still on hold.",Toast.LENGTH_LONG).show();
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if(requestCode == 1){
+            if(resultCode == RESULT_OK){
+                String temp_document_id = data.getStringExtra("documentToDelete");
+                if(!temp_document_id.equals("")){
+                    Document doc = db.getDocument(temp_document_id);
+                    try {
+                        db.delete(doc);
+                        graph_list.remove(intermediate_position);
+                        viewGraphsRecyclerAdaptar.notifyDataSetChanged();
+                    } catch (CouchbaseLiteException e) {
+                        e.printStackTrace();
+                    }
+                }
+                intermediate_position = -1;
+            }
+        }
     }
+
 
 }

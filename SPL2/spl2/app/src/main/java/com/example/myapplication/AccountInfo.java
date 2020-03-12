@@ -15,13 +15,6 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
@@ -38,10 +31,6 @@ public class AccountInfo extends Fragment {
     private EditText setupName,setupEmpId,setupNumber,setupType;
     private Button setupBtn;
 
-    private StorageReference storageReference;
-    private FirebaseAuth firebaseAuth;
-    private FirebaseFirestore firebaseFirestore;
-
     private Bitmap compressedImageFile;
 
     @Override
@@ -50,11 +39,6 @@ public class AccountInfo extends Fragment {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_account_info, container, false);
 
-        firebaseAuth = FirebaseAuth.getInstance();
-        user_id = firebaseAuth.getCurrentUser().getUid();
-
-        firebaseFirestore = FirebaseFirestore.getInstance();
-        storageReference = FirebaseStorage.getInstance().getReference();
 
 
         setupImage = view.findViewById(R.id.setup_image);
@@ -70,44 +54,6 @@ public class AccountInfo extends Fragment {
         setupEmpId.setKeyListener(null);
         setupNumber.setKeyListener(null);
 
-        firebaseFirestore.collection("Users").document(user_id).get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
-            @Override
-            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
-
-                if(task.isSuccessful()){
-
-                    if(task.getResult().exists()){
-
-                        String name = task.getResult().getString("name");
-                        String empId = task.getResult().getString("employeeID");
-                        String phone = task.getResult().getString("phone");
-                        String type = task.getResult().getString("type");
-                        String image = task.getResult().getString("image");
-
-                        mainImageURI = Uri.parse(image);
-
-                        setupName.setText(name);
-                        setupEmpId.setText(empId);
-                        setupType.setText(type);
-                        setupNumber.setText(phone);
-
-                        RequestOptions placeholderRequest = new RequestOptions();
-                        placeholderRequest.placeholder(R.mipmap.default_image);
-
-                        Glide.with(AccountInfo.this).setDefaultRequestOptions(placeholderRequest).load(image).into(setupImage);
-
-
-                    }
-
-                } else {
-
-                    String error = task.getException().getMessage();
-                    Toast.makeText(AccountInfo.this.getContext(), "(FIRESTORE Retrieve Error) : " + error, Toast.LENGTH_LONG).show();
-
-                }
-
-            }
-        });
 
         setupBtn.setOnClickListener(new View.OnClickListener() {
             @Override

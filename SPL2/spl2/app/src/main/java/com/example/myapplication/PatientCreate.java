@@ -19,13 +19,6 @@ import android.widget.ProgressBar;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.FirebaseFirestore;
-
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -38,8 +31,6 @@ public class PatientCreate extends AppCompatActivity {
     Button createPatient;
     ProgressBar progressBar;
 
-    private FirebaseAuth firebaseAuth;
-    private FirebaseFirestore firebaseFirestore;
 
     private DatePickerDialog.OnDateSetListener mDateSetListener;
     private TimePickerDialog timePickerDialog;
@@ -67,7 +58,6 @@ public class PatientCreate extends AppCompatActivity {
         getSupportActionBar().setTitle("Create PatientFile");
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        firebaseFirestore = FirebaseFirestore.getInstance();
 
         createPatient.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -151,42 +141,6 @@ public class PatientCreate extends AppCompatActivity {
     public void storeFirestore(String patient_name, String patient_gravida, String patient_para, String patient_hour,
                                String patient_membrane, String patientPara, String patient_hosnum, String patient_adTime, String patient_adDate){
 
-        FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
-
-        if(firebaseUser != null)
-        {
-            String userId = firebaseUser.getUid();
-            final Map<String, String> userMap = new HashMap<>();
-            userMap.put("name", patient_name);
-            userMap.put("gravida",patient_gravida);
-            userMap.put("para",patient_para);
-            userMap.put("membranes",patient_membrane);
-            userMap.put("hosNum",patient_hosnum);
-            userMap.put("hours",patient_hour);
-            userMap.put("admissionDate",patient_adDate);
-            userMap.put("admissionTime", patient_adTime);
-            userMap.put("userId",userId);
-
-            final String[] s = {""};
-
-            firebaseFirestore.collection("patients").add(userMap).addOnCompleteListener(new OnCompleteListener<DocumentReference>() {
-                @Override
-                public void onComplete(@NonNull Task<DocumentReference> task) {
-                    if(task.isSuccessful())
-                    {
-                        s[0] = task.getResult().getId();
-                        //Toast.makeText(PatientCreate.this,"Added patient with ID: " + s[0], Toast.LENGTH_LONG).show();
-                        createGraph(s[0],userMap.get("userId"));
-                    }
-                    else {
-                        String e = task.getException().getMessage();
-                        Toast.makeText(PatientCreate.this,"(FireStore Error) : " + e,Toast.LENGTH_LONG).show();
-                    }
-                }
-            });
-
-            progressBar.setVisibility(View.INVISIBLE);
-        }
     }
 
     private void createGraph(final String graphId, String userId) {

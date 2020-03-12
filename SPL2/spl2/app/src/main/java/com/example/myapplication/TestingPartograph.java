@@ -78,9 +78,6 @@ import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.firestore.FirebaseFirestore;
 import com.vikramezhil.droidspeech.DroidSpeech;
 import com.vikramezhil.droidspeech.OnDSListener;
 
@@ -120,7 +117,6 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
     private Button cont,notifier;
     private ScrollView scrollView,scrollViewB;
 
-    private FirebaseFirestore firebaseFirestore;
 
     private static final String KWS_SEARCH = "wakeup";
     private static final String MENU_SEARCH = "menu";
@@ -304,9 +300,6 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
             document_id = intent.getStringExtra("id");
             graphSaved = true;
         }
-
-//        graphId = getIntent().getStringExtra("graphId");
-//        firebaseFirestore = FirebaseFirestore.getInstance();
 
         toolbar = (Toolbar) findViewById(R.id.partoToolBar);
         notifier = (Button) findViewById(R.id.notifier);
@@ -1666,31 +1659,11 @@ public class TestingPartograph extends AppCompatActivity implements RecognitionL
     }
 
     private void deleteGraphs() {
-        firebaseFirestore.collection("graphs").document(graphId).delete().addOnCompleteListener(new OnCompleteListener<Void>() {
-            @Override
-            public void onComplete(@NonNull Task<Void> task) {
-                if(task.isSuccessful())
-                {
-                    Toast.makeText(TestingPartograph.this,"Graphs have been deleted",Toast.LENGTH_LONG).show();
-                    deletePatient();
-                }
-            }
-        });
+
     }
 
 
     private void deletePatient() {
-        firebaseFirestore.collection("patients").document(graphId).delete().addOnCompleteListener(new OnCompleteListener<Void>() {
-            @Override
-            public void onComplete(@NonNull Task<Void> task) {
-                if(task.isSuccessful())
-                {
-                    Toast.makeText(TestingPartograph.this,"Patient entry has also been deleted",Toast.LENGTH_LONG).show();
-                    onBackPressed();
-                    finish();
-                }
-            }
-        });
     }
 
 

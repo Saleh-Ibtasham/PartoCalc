@@ -44,9 +44,6 @@ public class Dashboard extends Fragment {
 
     private RecyclerView partograph_list_view;
     private List<Patient> graph_list;
-
-//    private FirebaseFirestore firebaseFirestore;
-//    private FirebaseAuth firebaseAuth;
     private DashRecyclerAdapter graphRecyclerAdapter;
 
     DatabaseConfiguration config;
@@ -128,6 +125,7 @@ public class Dashboard extends Fragment {
         patient.setBedNumber(document.getString("bedNumber"));
         patient.setName(document.getString("name"));
         patient.setAdmissionDate(document.getString("admissionDate"));
+        patient.setHospitalNumber(document.getString("hospitalNumber"));
         patient.setId(id);
         return patient;
     }

@@ -15,6 +15,7 @@
 
     <string name="text">Medicines</string>
 
+    <string name="title_activity_viewing_partograph">ViewingPartograph</string>
     <string-array name="types">
         <item>Please select a type</item>
         <item>Nurse</item>

@@ -41,6 +41,7 @@ public class BedManagementRecyclerAdapter extends RecyclerView.Adapter<BedManage
         holder.name.setText(patient.getName());
         holder.admissionDate.setText(patient.getAdmissionDate());
         holder.bedNumber.setText(patient.getBedNumber());
+        holder.hospitalNumber.setText(patient.getHospitalNumber());
         holder.id = patient.getId();
         holder.position = position;
 
@@ -54,7 +55,7 @@ public class BedManagementRecyclerAdapter extends RecyclerView.Adapter<BedManage
     public class ViewHolder extends RecyclerView.ViewHolder{
         private View mView;
 
-        private TextView name, admissionDate, bedNumber;
+        private TextView name, admissionDate, bedNumber,hospitalNumber;
 
         private Button viewBtn;
         private String id;
@@ -67,6 +68,7 @@ public class BedManagementRecyclerAdapter extends RecyclerView.Adapter<BedManage
             name = (TextView) itemView.findViewById(R.id.patient_name_input);
             admissionDate = (TextView) itemView.findViewById(R.id.patient_create_input);
             bedNumber = (TextView) itemView.findViewById(R.id.bed_name_input);
+            hospitalNumber = (TextView) itemView.findViewById(R.id.patient_hospital_number_input);
             viewBtn = mView.findViewById(R.id.delete_button);
 
             viewBtn.setOnClickListener(new View.OnClickListener() {

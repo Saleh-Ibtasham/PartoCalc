@@ -33,8 +33,6 @@ import com.couchbase.lite.Query;
 import com.couchbase.lite.QueryBuilder;
 import com.couchbase.lite.ResultSet;
 import com.couchbase.lite.SelectResult;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.Arrays;
 import java.util.List;
@@ -43,9 +41,6 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     private DrawerLayout drawer;
-
-    private FirebaseAuth mAuth;
-    private FirebaseFirestore firebaseFirestore;
 
     private String current_user_id;
     private String current_user_email;
@@ -166,6 +161,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             case R.id.nav_bed_settings:
                 getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
                         new BedManagement()).commit();
+                break;
+            case R.id.nav_view_graphs:
+                getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
+                        new ViewGraphs()).commit();
                 break;
         }
 

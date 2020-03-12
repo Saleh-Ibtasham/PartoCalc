@@ -27,11 +27,12 @@
     <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
 
     <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
-    <style name="verticalTextStyle"
-        parent="Widget.AppCompat.EditText">
+
+    <style name="verticalTextStyle" parent="Widget.AppCompat.EditText">
         <item name="android:padding">20dp</item>
         <item name="android:textSize">20sp</item>
     </style>
+
     <style name="WelcomeActvity" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="android:windowBackground">@drawable/background_splash</item>
     </style>

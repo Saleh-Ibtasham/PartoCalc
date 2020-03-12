@@ -9,10 +9,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 
 public class PassResetActivity extends AppCompatActivity {
 
@@ -32,23 +28,7 @@ public class PassResetActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 String s = email.getText().toString();
-                if(!TextUtils.isEmpty(s)){
-                    FirebaseAuth auth = FirebaseAuth.getInstance();
-                    final String emailAddress = email.getText().toString();
-
-                    auth.sendPasswordResetEmail(emailAddress)
-                            .addOnCompleteListener(new OnCompleteListener<Void>() {
-                                @Override
-                                public void onComplete(@NonNull Task<Void> task) {
-                                    if (task.isSuccessful()) {
-                                        Toast.makeText(PassResetActivity.this,"Password reset sent to email: "+emailAddress,Toast.LENGTH_LONG).show();
-                                    }
-                                    else {
-                                        String error = task.getException().getMessage();
-                                        Toast.makeText(PassResetActivity.this,"Error: " + error, Toast.LENGTH_LONG).show();
-                                    }
-                                }
-                            });
+                    if(!TextUtils.isEmpty(s)){
                 }
                 else {
                     Toast.makeText(PassResetActivity.this,"Please type an Email",Toast.LENGTH_LONG).show();
