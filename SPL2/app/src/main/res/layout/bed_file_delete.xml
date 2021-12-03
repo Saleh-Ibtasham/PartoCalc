@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.v7.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_marginEnd="8dp"
+    android:layout_marginStart="8dp"
+    android:layout_marginTop="8dp"
+    android:elevation="8dp"
+    app:cardElevation="10dp"
+    app:cardCornerRadius="10dp">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="8dp">
+        <TextView
+            android:id="@+id/bed_name_field"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.AppCompat.Large"
+            android:layout_alignParentStart="true"
+            android:layout_marginStart="16dp"
+            android:maxLines="1"
+            android:text="Bed"
+            android:ellipsize="end"/>
+        <TextView
+            android:id="@+id/bed_name_input"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:textAppearance="@style/TextAppearance.AppCompat.Display1"/>
+
+        <TextView
+            android:id="@+id/patient_name_field"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/bed_name_field"
+            android:layout_alignStart="@+id/bed_name_field"
+            android:layout_margin="8dp"
+            android:text="Patient                   :"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body1"/>
+
+        <TextView
+            android:id="@+id/patient_name_input"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@+id/patient_name_field"
+            android:layout_alignTop="@+id/patient_name_field"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body2"/>
+
+        <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/patient_create_field"
+        android:layout_below="@+id/patient_name_field"
+        android:layout_alignStart="@+id/patient_name_field"
+        android:text="Admission             :"
+        android:layout_marginBottom="8dp"
+        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+        />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/patient_create_input"
+            android:layout_toEndOf="@+id/patient_create_field"
+            android:layout_alignTop="@+id/patient_create_field"
+            android:layout_marginLeft="8dp"
+            android:layout_marginBottom="8dp"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body2"
+            />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/patient_hospital_number_field"
+            android:layout_below="@+id/patient_create_field"
+            android:layout_alignStart="@+id/patient_create_field"
+            android:text="Hospital Number :"
+            android:layout_marginBottom="8dp"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+            />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/patient_hospital_number_input"
+            android:layout_toEndOf="@+id/patient_hospital_number_field"
+            android:layout_alignTop="@+id/patient_hospital_number_field"
+            android:layout_marginLeft="8dp"
+            android:layout_marginBottom="8dp"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body2"
+            />
+
+        <android.support.v7.widget.AppCompatButton
+            android:id="@+id/delete_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/patient_hospital_number_field"
+            android:layout_alignTop="@+id/patient_hospital_number_field"
+            android:layout_alignParentEnd="true"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="16dp"
+            android:backgroundTint="@color/btncolor"
+            android:text="Delete"
+            android:textColor="@color/cfdialog_button_white_text_color" />
+    </RelativeLayout>
+
+
+</android.support.v7.widget.CardView>

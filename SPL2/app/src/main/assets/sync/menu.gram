@@ -1,0 +1,71 @@
+#JSGF V1.0;
+
+grammar menu;
+
+public <menu> = <option> ((<graphs1>[<tens2>][<tens>][<digits>][<digits2>])|(cervical dilatation <digitsCervical> centimeter)|(<graphs2> <digitsPlus> [plus])|(amniotic fluid <fluids>)|(contraction [<tensContraction>][<digits>][<digits2>] seconds <digits> (times | time))|(temperature [<tens2>][<tens>][<digits>][<digits2>] [point <digits>] degree (centigrade | fahrenheit)));
+
+<option> = input;
+
+<graphs1> = maternal pulse | fetal heart rate| head descend five by | oxytocin amount | oxytocin drops | amount;
+
+<graphs2> = protean | acetone | moulding;
+
+<tens> = twenty  |
+         thirty  |
+         forty  |
+         fifty  |
+         sixty  |
+         seventy  |
+         eighty  |
+         ninety;
+
+<tens2> = one hundred |
+         two hundred ;
+
+<tensContraction> = twenty  |
+         thirty  |
+         forty  |
+         fifty  |
+         sixty;
+
+<digits> = zero  |
+          one   |
+          two   |
+          three |
+          four  |
+          five  |
+          six   |
+          seven |
+          eight |
+          nine  ;
+
+<digits2> = ten   |
+          eleven  |
+          twelve  |
+          thirteen  |
+          fourteen  |
+          fifteen  |
+          sixteen  |
+          seventeen  |
+          eighteen  |
+          nineteen;
+
+<fluids> = i | c | m | b;
+
+<digitsPlus> = absent |
+          one   |
+          two   |
+          three ;
+
+ <digitsCervical> = one   |
+           two   |
+           three |
+           four  |
+           five  |
+           six   |
+           seven |
+           eight |
+           nine  |
+           ten;
+
+/*(pressure [<tens2>][<tens>][<digits>][<digits2>] and [<tens2>][<tens>][<digits>][<digits2>])*/
