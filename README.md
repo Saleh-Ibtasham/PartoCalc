@@ -1,8 +1,8 @@
 # PartoCalc
-[![Platform](https://img.shields.io/badge/platform-Android-blue.svg)](https://developer.android.com/about/versions/pie)
+[![Platform](https://img.shields.io/badge/Android-3DDC84?style=flat&logo=android&logoColor=white)](https://developer.android.com/about/versions/pie)
 [![Database](https://img.shields.io/badge/Couchbase-EA2328?style=flat&logo=couchbase&logoColor=white)](https://www.couchbase.com/products/mobile)
+[![Gradle Version](https://img.shields.io/badge/gradle-02303A?style=flat&logo=gradle&logoColor=white)](https://docs.gradle.org/current/release-notes)
 [![License](https://img.shields.io/badge/license-Apache-lightgreen)](https://www.apache.org/licenses/LICENSE-2.0)
-[![Gradle Version](https://img.shields.io/badge/gradle-3.4-green.svg)](https://docs.gradle.org/current/release-notes)
 
 ---
 
