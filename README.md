@@ -1,4 +1,5 @@
 # PartoCalc
+[![Gradle Version](https://img.shields.io/badge/platform-Android-blue.svg)](https://developer.android.com/about/versions/pie)
 [![Gradle Version](https://img.shields.io/badge/gradle-4.0-green.svg)](https://docs.gradle.org/current/release-notes)
 
 ---
@@ -8,10 +9,10 @@
 - [About the project](#about-the-project)
 - [Target Users](#target-users)
 - [Built With](#built-with)
-- [Project Demo](#project-demo)
+- [Mobile App Demo](#mobile-app-demo)
 - [Getting Started](#getting-started)
-- [License](#licensem)
-- [Author Info](#author-info)
+- [License](#license)
+- [Connect With Me](#connect-with-me)
 
 ---
 
@@ -21,7 +22,7 @@ Partograph is a composite graphical record where measurements related to materna
 
 PartoCalc is an automated partograph generator mobile app that is operated by voice command. The app is intended for the use of nurses during the childbirth of pregnant mothers. This project was funded by [Terre des hommes](https://www.tdh.ch/en).
 
-<p align="right">(<a href="#partocalc">back to top</a>)</p>
+<p align="right"><a href="#partocalc">back to top</a></p>
 
 ---
 
@@ -31,7 +32,7 @@ PartoCalc is an automated partograph generator mobile app that is operated by vo
 2.  Midwives / Nurses: They will get benefit because generating partograph data will be a lot easier.
 3.  Doctors: They will get more accurate access to maternal and fetal data and thus they will be able to make better medical decisions.
 
-<p align="right">(<a href="#partocalc">back to top</a>)</p>
+<p align="right"><a href="#partocalc">back to top</a></p>
 
 ---
 
@@ -47,7 +48,57 @@ This section describes the languages and frameworks used for the project.
 - [PocketSphinx](https://github.com/cmusphinx/pocketsphinx)
 - [Adobe XD](https://www.adobe.com/products/xd.html)
 
-<p align="right">(<a href="#partocalc">back to top</a>)</p>
+<p align="right"><a href="#partocalc">back to top</a></p>
+
+---
+## Mobile App Demo
+
+<table style="width:100%" class="center">
+  <tr>
+    <th colspan =  "100%">Simple homepage for maintaining partograph</th>
+  </tr>
+  <tr>
+    <td><img src="Documentation/Demo/image_1.png"/></td>
+    <td><img src="Documentation/Demo/image_2.png"/></td>
+  </tr>
+  <tr>
+    <th colspan =  "100%">Easily create a partograph for a patient!</th>
+  </tr>
+  <tr>
+    <td><img src="Documentation/Demo/image_3.png"/></td>
+    <td><img src="Documentation/Demo/image_4.png"/></td>
+  </tr>
+  <tr>
+    <th colspan =  "100%">Get instant emergency alert!</th>
+  </tr>
+  <tr>
+    <td><img src="Documentation/Demo/image_5.png"/></td>
+    <td><img src="Documentation/Demo/image_6.png"/></td>
+  </tr>
+  <tr>
+    <th colspan =  "100%">Save the progress!</th>
+  </tr>
+  <tr>
+    <td><img src="Documentation/Demo/image_7.png"/></td>
+    <td><img src="Documentation/Demo/image_8.png"/></td>
+  </tr>
+  <tr>
+    <th colspan =  "100%">Update anytime</th>
+  </tr>
+  <tr>
+    <td><img src="Documentation/Demo/image_9.png"/></td>
+    <td><img src="Documentation/Demo/image_10.png"/></td>
+  </tr>
+    <tr>
+    <th colspan =  "100%">Delete finished partographs</th>
+  </tr>
+  <tr>
+    <td><img src="Documentation/Demo/image_12.png"/></td>
+    <td><img src="Documentation/Demo/image_13.png"/></td>
+  </tr>
+</table>
+
+<p align="right"><a href="#partocalc">back to top</a></p>
 
 ---
 
@@ -59,12 +110,12 @@ This section describes the languages and frameworks used for the project.
 
 ### Usage
 
-*For detailed voice command instructions, please refer to the [Documentation](https://github.com/Saleh-Ibtasham/PartoCalc/blob/master/PartoCalc%20User%20Manual%20v2.pdf)*
+*For detailed voice command instructions, please refer to the [Documentation](https://github.com/Saleh-Ibtasham/PartoCalc/blob/master/Documentation/PartoCalc%20User%20Manual%20v2.pdf)*
 
 ### Main Project Files
-*For detailed project code overview go inside the "spl2" folder or click [here](https://github.com/Saleh-Ibtasham/PartoCalc/tree/master/SPL2/spl2).*
+*For detailed project code overview go inside the "SPL2" folder or click [here](https://github.com/Saleh-Ibtasham/PartoCalc/tree/master/SPL2).*
 
-<p align="right">(<a href="#partocalc">back to top</a>)</p>
+<p align="right"><a href="#partocalc">back to top</a></p>
 
 ---
 
@@ -86,13 +137,17 @@ This section describes the languages and frameworks used for the project.
     limitations under the License.
 ```
 
-<p align="right">(<a href="#partocalc">back to top</a>)</p>
+<p align="right"><a href="#partocalc">back to top</a></p>
 
 ---
 
-## Author Info
+## Connect With Me
 
-- Linkedin - [Linked In](https://www.linkedin.com/in/saleh-ibtasham/)
-- Website - [Md Saleh Ibtasham](https://sites.google.com/view/md-saleh-ibtasham/home)
+[<img alt="md-saleh-ibtasham" src="https://img.shields.io/badge/website-000000?style=for-the-badge&logoColor=white" />][website]
+[<img alt="md-saleh-ibtasham | LinkedIn" src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" />][linkedin]
 
-<p align="right">(<a href="#partocalc">back to top</a>)</p>
+<p align="right"><a href="#partocalc">back to top</a></p>
+
+
+[website]: https://sites.google.com/view/md-saleh-ibtasham/home
+[linkedin]: https://www.linkedin.com/in/saleh-ibtasham/
