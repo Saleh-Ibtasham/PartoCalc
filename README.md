@@ -1,6 +1,9 @@
 # PartoCalc
 [![Platform](https://img.shields.io/badge/Android-3DDC84?style=flat&logo=android&logoColor=white)](https://developer.android.com/about/versions/pie)
+[![Front-end](https://img.shields.io/badge/Bootstrap-563D7C?style=flat&logo=bootstrap&logoColor=white)](https://getbootstrap.com/docs/3.4/)
+[![Prototyping](https://img.shields.io/badge/Adobe%20XD-470137?style=flat&logo=Adobe%20XD&logoColor=#FF61F6)](https://www.adobe.com/products/xd.html)
 [![Database](https://img.shields.io/badge/Couchbase-EA2328?style=flat&logo=couchbase&logoColor=white)](https://www.couchbase.com/products/mobile)
+[![Database](https://img.shields.io/badge/SQLite-07405E?style=flat&logo=sqlite&logoColor=white)](https://www.sqlite.org/index.html)
 [![Gradle Version](https://img.shields.io/badge/gradle-02303A?style=flat&logo=gradle&logoColor=white)](https://docs.gradle.org/current/release-notes)
 [![License](https://img.shields.io/badge/license-Apache-lightgreen)](https://www.apache.org/licenses/LICENSE-2.0)
 
@@ -45,7 +48,7 @@ This section describes the languages and frameworks used for the project.
 - [Java](https://www.java.com/en/)
 - [Android SDK](https://developer.android.com/about/versions/pie) (version 28)
 - [SQLite](https://www.sqlite.org/index.html)
-- [Couchbase Mobie](https://www.couchbase.com/products/mobile)
+- [Couchbase Mobile](https://www.couchbase.com/products/mobile)
 - [Bootstrap](https://getbootstrap.com/docs/3.4/)
 - [PocketSphinx](https://github.com/cmusphinx/pocketsphinx)
 - [Adobe XD](https://www.adobe.com/products/xd.html)
